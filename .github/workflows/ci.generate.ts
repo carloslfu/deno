@@ -549,6 +549,14 @@ const ci = {
           ...sysRootStep,
         },
         {
+          if: "matrix.profile == 'release'",
+          run: `\
+export CLANG_BASE_PATH="/usr"
+export V8_FROM_SOURCE=1
+export EXTRA_GN_ARGS="is_official_build=true chrome_pgo_phase=0 is_cfi=false clang_version=${llvmVersion}"
+`,
+        },
+        {
           name: "Remove macOS cURL --ipv4 flag",
           run: [
             // cURL's --ipv4 flag is busted for now

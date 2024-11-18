@@ -322,6 +322,11 @@ jobs:
           CC=/usr/bin/clang-19
           CFLAGS=-flto=thin $CFLAGS
           " > $GITHUB_ENV
+      - if: '!(matrix.skip) && (matrix.profile == ''release'')'
+        run: |
+          export CLANG_BASE_PATH="/usr"
+          export V8_FROM_SOURCE=1
+          export EXTRA_GN_ARGS="is_official_build=true chrome_pgo_phase=0 is_cfi=false clang_version=19"
       - name: Remove macOS cURL --ipv4 flag
         run: |-
           curl --version
