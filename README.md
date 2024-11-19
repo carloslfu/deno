@@ -1,4 +1,4 @@
-# deno-lib
+# deno_lib
 
 Fully-featured and extensible Deno crate for embedding Deno in your Rust app (unofficial).
 
