@@ -1762,6 +1762,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "deno_lib_test"
+version = "0.1.0"
+dependencies = [
+ "deno",
+ "deno_runtime",
+]
+
+[[package]]
 name = "deno_lint"
 version = "0.68.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

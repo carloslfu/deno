@@ -1,0 +1,16 @@
+[package]
+name = "deno_lib_test"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Test for deno-lib crate"
+
+[[bin]]
+name = "deno_lib_test"
+path = "main.rs"
+
+[dependencies]
+deno_lib.workspace = true
+deno_runtime.workspace = true

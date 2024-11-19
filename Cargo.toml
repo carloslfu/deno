@@ -5,6 +5,7 @@ resolver = "2"
 members = [
   "bench_util",
   "cli",
+  "deno-lib-test",
   "ext/broadcast_channel",
   "ext/cache",
   "ext/canvas",
@@ -56,6 +57,7 @@ deno_npm = "=0.25.4"
 deno_path_util = "=0.2.1"
 deno_permissions = { version = "0.37.0", path = "./runtime/permissions" }
 deno_runtime = { version = "0.186.0", path = "./runtime" }
+deno_lib = { package = "deno", version = "2.0.6", path = "./cli" }
 deno_semver = "=0.5.16"
 deno_terminal = "0.2.0"
 napi_sym = { version = "0.107.0", path = "./ext/napi/sym" }
