@@ -1,16 +1,16 @@
 # Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.
 
 [package]
-name = "deno_permissions"
+name = "deno_permissions_extended"
 version = "0.37.0"
-authors.workspace = true
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
-description = "Provides the deno permissions implementation."
+authors = ["Carlos Galarza <carloslfu@gmail.com>"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/carloslfu/deno"
+description = "Provides the deno permissions implementation with the ability to specify a custom prompter."
 
 [lib]
-name = "deno_permissions"
+name = "deno_permissions_extended"
 path = "lib.rs"
 
 [dependencies]
