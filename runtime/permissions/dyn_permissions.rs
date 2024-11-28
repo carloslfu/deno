@@ -27,10 +27,10 @@ use std::path::PathBuf;
 use std::string::ToString;
 use std::sync::Arc;
 
-use crate::prompter::permission_prompt;
-use crate::prompter::PERMISSION_EMOJI;
+use crate::dyn_prompter::PermissionPrompter;
+use crate::dyn_prompter::PERMISSION_EMOJI;
 
-use crate::prompter::PromptResponse;
+use crate::dyn_prompter::PromptResponse;
 
 #[derive(Debug, thiserror::Error)]
 #[error("Requires {access}, {}", format_permission_error(.name))]
@@ -156,8 +156,15 @@ impl PermissionState {
     api_name: Option<&str>,
     info: Option<&str>,
     prompt: bool,
+    prompter: &mut PermissionPrompter,
   ) -> (Result<(), PermissionDeniedError>, bool, bool) {
-    self.check2(name, api_name, || info.map(|s| s.to_string()), prompt)
+    self.check2(
+      name,
+      api_name,
+      || info.map(|s| s.to_string()),
+      prompt,
+      prompter,
+    )
   }
 
   #[inline]
@@ -167,6 +174,7 @@ impl PermissionState {
     api_name: Option<&str>,
     info: impl Fn() -> Option<String>,
     prompt: bool,
+    prompter: &mut PermissionPrompter,
   ) -> (Result<(), PermissionDeniedError>, bool, bool) {
     match self {
       PermissionState::Granted => {
@@ -181,7 +189,7 @@ impl PermissionState {
             .map(|info| { format!(" to {info}") })
             .unwrap_or_default(),
         );
-        match permission_prompt(&msg, name, api_name, true) {
+        match prompter.prompt(&msg, name, api_name, true) {
           PromptResponse::Allow => {
             Self::log_perm_access(name, info);
             (Ok(()), true, false)
@@ -222,10 +230,13 @@ impl UnitPermission {
     self.state
   }
 
-  pub fn request(&mut self) -> PermissionState {
+  pub fn request(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> PermissionState {
     if self.state == PermissionState::Prompt {
       if PromptResponse::Allow
-        == permission_prompt(
+        == prompter.prompt(
           &format!("access to {}", self.description),
           self.name,
           Some("Deno.permissions.query()"),
@@ -247,9 +258,14 @@ impl UnitPermission {
     self.state
   }
 
-  pub fn check(&mut self) -> Result<(), PermissionDeniedError> {
+  pub fn check(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionDeniedError> {
     let (result, prompted, _is_allow_all) =
-      self.state.check(self.name, None, None, self.prompt);
+      self
+        .state
+        .check(self.name, None, None, self.prompt, prompter);
     if prompted {
       if result.is_ok() {
         self.state = PermissionState::Granted;
@@ -263,6 +279,7 @@ impl UnitPermission {
   fn create_child_permissions(
     &mut self,
     flag: ChildUnitPermissionArg,
+    prompter: &mut PermissionPrompter,
   ) -> Result<Self, ChildPermissionError> {
     let mut perm = self.clone();
     match flag {
@@ -270,7 +287,7 @@ impl UnitPermission {
         // copy
       }
       ChildUnitPermissionArg::Granted => {
-        if self.check().is_err() {
+        if self.check(prompter).is_err() {
           return Err(ChildPermissionError::Escalation);
         }
         perm.state = PermissionState::Granted;
@@ -328,6 +345,7 @@ pub trait QueryDescriptor: Debug {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError>;
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool;
@@ -403,9 +421,10 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
   pub fn check_all_api(
     &mut self,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, api_name)
+    self.check_desc(None, false, api_name, prompter)
   }
 
   fn check_desc(
@@ -413,6 +432,7 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
     desc: Option<&TQuery>,
     assert_non_partial: bool,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     let (result, prompted, is_allow_all) = self
       .query_desc(desc, AllowPartial::from(!assert_non_partial))
@@ -421,6 +441,7 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
         api_name,
         || desc.map(|d| format_display_name(d.display_name())),
         self.prompt,
+        prompter,
       );
     if prompted {
       if result.is_ok() {
@@ -470,7 +491,11 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
     }
   }
 
-  fn request_desc(&mut self, desc: Option<&TQuery>) -> PermissionState {
+  fn request_desc(
+    &mut self,
+    desc: Option<&TQuery>,
+    prompter: &mut PermissionPrompter,
+  ) -> PermissionState {
     let state = self.query_desc(desc, AllowPartial::TreatAsPartialGranted);
     if state == PermissionState::Granted {
       self.insert_granted(desc);
@@ -488,7 +513,7 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
       message
         .push_str(&format!(" to {}", format_display_name(desc.display_name())));
     }
-    match permission_prompt(
+    match prompter.prompt(
       &message,
       TQuery::flag_name(),
       Some("Deno.permissions.request()"),
@@ -604,6 +629,7 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
     &mut self,
     flag: ChildUnaryPermissionArg,
     parse: impl Fn(&str) -> Result<Option<TQuery::AllowDesc>, E>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<UnaryPermission<TQuery>, ChildPermissionError>
   where
     ChildPermissionError: From<E>,
@@ -615,7 +641,7 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
         perms.clone_from(self);
       }
       ChildUnaryPermissionArg::Granted => {
-        if self.check_all_api(None).is_err() {
+        if self.check_all_api(None, prompter).is_err() {
           return Err(ChildPermissionError::Escalation);
         }
         perms.granted_global = true;
@@ -628,7 +654,7 @@ impl<TQuery: QueryDescriptor> UnaryPermission<TQuery> {
           .collect::<Result<_, E>>()?;
         if !perms.granted_list.iter().all(|desc| {
           TQuery::from_allow(desc)
-            .check_in_permission(self, None)
+            .check_in_permission(self, None, prompter)
             .is_ok()
         }) {
           return Err(ChildPermissionError::Escalation);
@@ -702,9 +728,10 @@ impl QueryDescriptor for ReadQueryDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), true, api_name)
+    perm.check_desc(Some(self), true, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -765,9 +792,10 @@ impl QueryDescriptor for WriteQueryDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), true, api_name)
+    perm.check_desc(Some(self), true, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -891,9 +919,10 @@ impl QueryDescriptor for NetDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), false, api_name)
+    perm.check_desc(Some(self), false, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -1068,9 +1097,10 @@ impl QueryDescriptor for ImportDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), false, api_name)
+    perm.check_desc(Some(self), false, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -1145,9 +1175,10 @@ impl QueryDescriptor for EnvDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), false, api_name)
+    perm.check_desc(Some(self), false, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -1282,9 +1313,10 @@ impl QueryDescriptor for RunQueryDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), false, api_name)
+    perm.check_desc(Some(self), false, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -1501,9 +1533,10 @@ impl QueryDescriptor for SysDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), false, api_name)
+    perm.check_desc(Some(self), false, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -1562,9 +1595,10 @@ impl QueryDescriptor for FfiQueryDescriptor {
     &self,
     perm: &mut UnaryPermission<Self>,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(perm);
-    perm.check_desc(Some(self), true, api_name)
+    perm.check_desc(Some(self), true, api_name, prompter)
   }
 
   fn matches_allow(&self, other: &Self::AllowDesc) -> bool {
@@ -1599,8 +1633,9 @@ impl UnaryPermission<ReadQueryDescriptor> {
   pub fn request(
     &mut self,
     path: Option<&ReadQueryDescriptor>,
+    prompter: &mut PermissionPrompter,
   ) -> PermissionState {
-    self.request_desc(path)
+    self.request_desc(path, prompter)
   }
 
   pub fn revoke(
@@ -1614,9 +1649,10 @@ impl UnaryPermission<ReadQueryDescriptor> {
     &mut self,
     desc: &ReadQueryDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(desc), true, api_name)
+    self.check_desc(Some(desc), true, api_name, prompter)
   }
 
   #[inline]
@@ -1624,17 +1660,19 @@ impl UnaryPermission<ReadQueryDescriptor> {
     &mut self,
     desc: &ReadQueryDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(desc), false, api_name)
+    self.check_desc(Some(desc), false, api_name, prompter)
   }
 
   pub fn check_all(
     &mut self,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, api_name)
+    self.check_desc(None, false, api_name, prompter)
   }
 }
 
@@ -1646,8 +1684,9 @@ impl UnaryPermission<WriteQueryDescriptor> {
   pub fn request(
     &mut self,
     path: Option<&WriteQueryDescriptor>,
+    prompter: &mut PermissionPrompter,
   ) -> PermissionState {
-    self.request_desc(path)
+    self.request_desc(path, prompter)
   }
 
   pub fn revoke(
@@ -1661,9 +1700,10 @@ impl UnaryPermission<WriteQueryDescriptor> {
     &mut self,
     path: &WriteQueryDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(path), true, api_name)
+    self.check_desc(Some(path), true, api_name, prompter)
   }
 
   #[inline]
@@ -1671,17 +1711,19 @@ impl UnaryPermission<WriteQueryDescriptor> {
     &mut self,
     path: &WriteQueryDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(path), false, api_name)
+    self.check_desc(Some(path), false, api_name, prompter)
   }
 
   pub fn check_all(
     &mut self,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, api_name)
+    self.check_desc(None, false, api_name, prompter)
   }
 }
 
@@ -1690,8 +1732,12 @@ impl UnaryPermission<NetDescriptor> {
     self.query_desc(host, AllowPartial::TreatAsPartialGranted)
   }
 
-  pub fn request(&mut self, host: Option<&NetDescriptor>) -> PermissionState {
-    self.request_desc(host)
+  pub fn request(
+    &mut self,
+    host: Option<&NetDescriptor>,
+    prompter: &mut PermissionPrompter,
+  ) -> PermissionState {
+    self.request_desc(host, prompter)
   }
 
   pub fn revoke(&mut self, host: Option<&NetDescriptor>) -> PermissionState {
@@ -1702,14 +1748,18 @@ impl UnaryPermission<NetDescriptor> {
     &mut self,
     host: &NetDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(host), false, api_name)
+    self.check_desc(Some(host), false, api_name, prompter)
   }
 
-  pub fn check_all(&mut self) -> Result<(), PermissionDeniedError> {
+  pub fn check_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, None)
+    self.check_desc(None, false, None, prompter)
   }
 }
 
@@ -1721,8 +1771,9 @@ impl UnaryPermission<ImportDescriptor> {
   pub fn request(
     &mut self,
     host: Option<&ImportDescriptor>,
+    prompter: &mut PermissionPrompter,
   ) -> PermissionState {
-    self.request_desc(host)
+    self.request_desc(host, prompter)
   }
 
   pub fn revoke(&mut self, host: Option<&ImportDescriptor>) -> PermissionState {
@@ -1733,14 +1784,18 @@ impl UnaryPermission<ImportDescriptor> {
     &mut self,
     host: &ImportDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(host), false, api_name)
+    self.check_desc(Some(host), false, api_name, prompter)
   }
 
-  pub fn check_all(&mut self) -> Result<(), PermissionDeniedError> {
+  pub fn check_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, None)
+    self.check_desc(None, false, None, prompter)
   }
 }
 
@@ -1752,8 +1807,12 @@ impl UnaryPermission<EnvDescriptor> {
     )
   }
 
-  pub fn request(&mut self, env: Option<&str>) -> PermissionState {
-    self.request_desc(env.map(EnvDescriptor::new).as_ref())
+  pub fn request(
+    &mut self,
+    env: Option<&str>,
+    prompter: &mut PermissionPrompter,
+  ) -> PermissionState {
+    self.request_desc(env.map(EnvDescriptor::new).as_ref(), prompter)
   }
 
   pub fn revoke(&mut self, env: Option<&str>) -> PermissionState {
@@ -1764,14 +1823,18 @@ impl UnaryPermission<EnvDescriptor> {
     &mut self,
     env: &str,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(&EnvDescriptor::new(env)), false, api_name)
+    self.check_desc(Some(&EnvDescriptor::new(env)), false, api_name, prompter)
   }
 
-  pub fn check_all(&mut self) -> Result<(), PermissionDeniedError> {
+  pub fn check_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, None)
+    self.check_desc(None, false, None, prompter)
   }
 }
 
@@ -1780,8 +1843,12 @@ impl UnaryPermission<SysDescriptor> {
     self.query_desc(kind, AllowPartial::TreatAsPartialGranted)
   }
 
-  pub fn request(&mut self, kind: Option<&SysDescriptor>) -> PermissionState {
-    self.request_desc(kind)
+  pub fn request(
+    &mut self,
+    kind: Option<&SysDescriptor>,
+    prompter: &mut PermissionPrompter,
+  ) -> PermissionState {
+    self.request_desc(kind, prompter)
   }
 
   pub fn revoke(&mut self, kind: Option<&SysDescriptor>) -> PermissionState {
@@ -1792,14 +1859,18 @@ impl UnaryPermission<SysDescriptor> {
     &mut self,
     kind: &SysDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(kind), false, api_name)
+    self.check_desc(Some(kind), false, api_name, prompter)
   }
 
-  pub fn check_all(&mut self) -> Result<(), PermissionDeniedError> {
+  pub fn check_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, None)
+    self.check_desc(None, false, None, prompter)
   }
 }
 
@@ -1811,8 +1882,9 @@ impl UnaryPermission<RunQueryDescriptor> {
   pub fn request(
     &mut self,
     cmd: Option<&RunQueryDescriptor>,
+    prompter: &mut PermissionPrompter,
   ) -> PermissionState {
-    self.request_desc(cmd)
+    self.request_desc(cmd, prompter)
   }
 
   pub fn revoke(
@@ -1826,19 +1898,25 @@ impl UnaryPermission<RunQueryDescriptor> {
     &mut self,
     cmd: &RunQueryDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
-    self.check_desc(Some(cmd), false, api_name)
+    self.check_desc(Some(cmd), false, api_name, prompter)
   }
 
   pub fn check_all(
     &mut self,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
-    self.check_desc(None, false, api_name)
+    self.check_desc(None, false, api_name, prompter)
   }
 
   /// Queries without prompting
-  pub fn query_all(&mut self, api_name: Option<&str>) -> bool {
+  pub fn query_all(
+    &mut self,
+    api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
+  ) -> bool {
     if self.is_allow_all() {
       return true;
     }
@@ -1848,6 +1926,7 @@ impl UnaryPermission<RunQueryDescriptor> {
         api_name,
         || None,
         /* prompt */ false,
+        prompter,
       );
     result.is_ok()
   }
@@ -1861,8 +1940,9 @@ impl UnaryPermission<FfiQueryDescriptor> {
   pub fn request(
     &mut self,
     path: Option<&FfiQueryDescriptor>,
+    prompter: &mut PermissionPrompter,
   ) -> PermissionState {
-    self.request_desc(path)
+    self.request_desc(path, prompter)
   }
 
   pub fn revoke(
@@ -1876,22 +1956,27 @@ impl UnaryPermission<FfiQueryDescriptor> {
     &mut self,
     path: &FfiQueryDescriptor,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(Some(path), true, api_name)
+    self.check_desc(Some(path), true, api_name, prompter)
   }
 
   pub fn check_partial(
     &mut self,
     path: Option<&FfiQueryDescriptor>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(path, false, None)
+    self.check_desc(path, false, None, prompter)
   }
 
-  pub fn check_all(&mut self) -> Result<(), PermissionDeniedError> {
+  pub fn check_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionDeniedError> {
     skip_check_if_is_permission_fully_granted!(self);
-    self.check_desc(None, false, Some("all"))
+    self.check_desc(None, false, Some("all"), prompter)
   }
 }
 
@@ -2234,6 +2319,7 @@ impl PermissionsContainer {
   pub fn create_child_permissions(
     &self,
     child_permissions_arg: ChildPermissionsArg,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionsContainer, ChildPermissionError> {
     fn is_granted_unary(arg: &ChildUnaryPermissionArg) -> bool {
       match arg {
@@ -2250,7 +2336,7 @@ impl PermissionsContainer {
     let mut inner = self.inner.lock();
     worker_perms.all = inner
       .all
-      .create_child_permissions(ChildUnitPermissionArg::Inherit)?;
+      .create_child_permissions(ChildUnitPermissionArg::Inherit, prompter)?;
 
     // downgrade the `worker_perms.all` based on the other values
     if worker_perms.all.query() == PermissionState::Granted {
@@ -2279,6 +2365,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_read_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
     worker_perms.write = inner.write.create_child_permissions(
       child_permissions_arg.write,
@@ -2287,6 +2374,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_write_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
     worker_perms.import = inner.import.create_child_permissions(
       child_permissions_arg.import,
@@ -2295,6 +2383,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_import_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
     worker_perms.net = inner.net.create_child_permissions(
       child_permissions_arg.net,
@@ -2303,6 +2392,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_net_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
     worker_perms.env = inner.env.create_child_permissions(
       child_permissions_arg.env,
@@ -2311,6 +2401,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_env_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
     worker_perms.sys = inner.sys.create_child_permissions(
       child_permissions_arg.sys,
@@ -2319,6 +2410,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_sys_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
     worker_perms.run = inner.run.create_child_permissions(
       child_permissions_arg.run,
@@ -2328,6 +2420,7 @@ impl PermissionsContainer {
         }
         AllowRunDescriptorParseResult::Descriptor(desc) => Ok(Some(desc)),
       },
+      prompter,
     )?;
     worker_perms.ffi = inner.ffi.create_child_permissions(
       child_permissions_arg.ffi,
@@ -2336,6 +2429,7 @@ impl PermissionsContainer {
           self.descriptor_parser.parse_ffi_descriptor(text)?,
         ))
       },
+      prompter,
     )?;
 
     Ok(PermissionsContainer::new(
@@ -2349,6 +2443,7 @@ impl PermissionsContainer {
     &self,
     specifier: &ModuleSpecifier,
     kind: CheckSpecifierKind,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     let mut inner = self.inner.lock();
     match specifier.scheme() {
@@ -2367,6 +2462,7 @@ impl PermissionsContainer {
               }
               .into_read(),
               Some("import()"),
+              prompter,
             )
             .map_err(PermissionCheckError::PermissionDenied),
           Err(_) => {
@@ -2384,7 +2480,7 @@ impl PermissionsContainer {
         let desc = self
           .descriptor_parser
           .parse_import_descriptor_from_url(specifier)?;
-        inner.import.check(&desc, Some("import()"))?;
+        inner.import.check(&desc, Some("import()"), prompter)?;
         Ok(())
       }
     }
