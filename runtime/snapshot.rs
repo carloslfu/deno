@@ -10,7 +10,7 @@ use deno_core::v8;
 use deno_core::Extension;
 use deno_http::DefaultHttpPropertyExtractor;
 use deno_io::fs::FsError;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use std::borrow::Cow;
 use std::io::Write;
 use std::path::Path;

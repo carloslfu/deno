@@ -2,7 +2,7 @@
 
 use deno_core::op2;
 use deno_core::OpState;
-use deno_permissions::PermissionsContainer;
+use deno_permissions_extended::PermissionsContainer;
 
 #[cfg(unix)]
 fn kill(pid: i32, sig: i32) -> i32 {

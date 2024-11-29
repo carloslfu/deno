@@ -14,7 +14,7 @@ pub enum OsError {
   #[error(transparent)]
   Priority(priority::PriorityError),
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error("Failed to get cpu info")]
   FailedToGetCpuInfo,
   #[error("Failed to get user info")]

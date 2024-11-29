@@ -26,7 +26,7 @@ use deno_core::ToJsBuffer;
 use deno_io::fs::FileResource;
 use deno_io::fs::FsError;
 use deno_io::fs::FsStat;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use rand::rngs::ThreadRng;
 use rand::thread_rng;
 use rand::Rng;
@@ -128,7 +128,7 @@ fn map_permission_error(
       };
 
       FsOpsError::NotCapableAccess {
-        standalone: deno_permissions::is_standalone(),
+        standalone: deno_permissions_extended::is_standalone(),
         err,
         path: format!("{path}{truncated}"),
       }

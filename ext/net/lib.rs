@@ -11,7 +11,7 @@ mod tcp;
 
 use deno_core::error::AnyError;
 use deno_core::OpState;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use deno_tls::rustls::RootCertStore;
 use deno_tls::RootCertStoreProvider;
 use std::borrow::Cow;
@@ -47,14 +47,14 @@ pub trait NetPermissions {
   ) -> Result<Cow<'a, Path>, PermissionCheckError>;
 }
 
-impl NetPermissions for deno_permissions::PermissionsContainer {
+impl NetPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_net<T: AsRef<str>>(
     &mut self,
     host: &(T, Option<u16>),
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_net(self, host, api_name)
+    deno_permissions_extended::PermissionsContainer::check_net(self, host, api_name)
   }
 
   #[inline(always)]
@@ -63,7 +63,7 @@ impl NetPermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read(self, path, api_name)
+    deno_permissions_extended::PermissionsContainer::check_read(self, path, api_name)
   }
 
   #[inline(always)]
@@ -72,7 +72,7 @@ impl NetPermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write(self, path, api_name)
+    deno_permissions_extended::PermissionsContainer::check_write(self, path, api_name)
   }
 
   #[inline(always)]
@@ -81,7 +81,7 @@ impl NetPermissions for deno_permissions::PermissionsContainer {
     path: &'a Path,
     api_name: &str,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_path(
+    deno_permissions_extended::PermissionsContainer::check_write_path(
       self, path, api_name,
     )
   }

@@ -6,7 +6,7 @@ use deno_core::v8;
 use deno_core::OpState;
 use deno_node::NODE_ENV_VAR_ALLOWLIST;
 use deno_path_util::normalize_path;
-use deno_permissions::PermissionsContainer;
+use deno_permissions_extended::PermissionsContainer;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::env;
@@ -73,7 +73,7 @@ deno_core::extension!(
 #[derive(Debug, thiserror::Error)]
 pub enum OsError {
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error("File name or path {0:?} is not valid UTF-8")]
   InvalidUtf8(std::ffi::OsString),
   #[error("Key is an empty string.")]

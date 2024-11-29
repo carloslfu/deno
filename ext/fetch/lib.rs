@@ -39,7 +39,7 @@ use deno_core::OpState;
 use deno_core::RcRef;
 use deno_core::Resource;
 use deno_core::ResourceId;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use deno_tls::rustls::RootCertStore;
 use deno_tls::Proxy;
 use deno_tls::RootCertStoreProvider;
@@ -356,14 +356,14 @@ pub trait FetchPermissions {
   ) -> Result<Cow<'a, Path>, PermissionCheckError>;
 }
 
-impl FetchPermissions for deno_permissions::PermissionsContainer {
+impl FetchPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_net_url(
     &mut self,
     url: &Url,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_net_url(self, url, api_name)
+    deno_permissions_extended::PermissionsContainer::check_net_url(self, url, api_name)
   }
 
   #[inline(always)]
@@ -372,7 +372,7 @@ impl FetchPermissions for deno_permissions::PermissionsContainer {
     path: &'a Path,
     api_name: &str,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read_path(
+    deno_permissions_extended::PermissionsContainer::check_read_path(
       self,
       path,
       Some(api_name),

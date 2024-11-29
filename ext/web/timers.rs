@@ -13,7 +13,7 @@ pub trait TimersPermission {
   fn allow_hrtime(&mut self) -> bool;
 }
 
-impl TimersPermission for deno_permissions::PermissionsContainer {
+impl TimersPermission for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn allow_hrtime(&mut self) -> bool {
     true

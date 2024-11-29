@@ -82,7 +82,7 @@ pub enum NetError {
   #[error("Another accept task is ongoing")]
   AcceptTaskOngoing,
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error("{0}")]
   Resource(deno_core::error::AnyError),
   #[error("No resolved address found")]
@@ -827,7 +827,7 @@ mod tests {
   use deno_core::futures::FutureExt;
   use deno_core::JsRuntime;
   use deno_core::RuntimeOptions;
-  use deno_permissions::PermissionCheckError;
+  use deno_permissions_extended::PermissionCheckError;
   use hickory_proto::rr::rdata::a::A;
   use hickory_proto::rr::rdata::aaaa::AAAA;
   use hickory_proto::rr::rdata::caa::KeyValue;

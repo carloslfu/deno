@@ -11,7 +11,7 @@ use deno_core::ResourceId;
 
 use deno_core::op2;
 
-use deno_permissions::PermissionsContainer;
+use deno_permissions_extended::PermissionsContainer;
 use notify::event::Event as NotifyEvent;
 use notify::event::ModifyKind;
 use notify::Error as NotifyError;
@@ -114,7 +114,7 @@ pub enum FsEventsError {
   #[error(transparent)]
   Resource(deno_core::error::AnyError),
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error(transparent)]
   Notify(#[from] NotifyError),
   #[error(transparent)]

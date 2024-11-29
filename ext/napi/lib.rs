@@ -55,7 +55,7 @@ use libloading::os::windows::*;
 // Expose common stuff for ease of use.
 // `use deno_napi::*`
 pub use deno_core::v8;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 pub use std::ffi::CStr;
 pub use std::os::raw::c_char;
 pub use std::os::raw::c_void;
@@ -514,10 +514,10 @@ pub trait NapiPermissions {
 
 // NOTE(bartlomieju): for now, NAPI uses `--allow-ffi` flag, but that might
 // change in the future.
-impl NapiPermissions for deno_permissions::PermissionsContainer {
+impl NapiPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check(&mut self, path: &str) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_ffi(self, path)
+    deno_permissions_extended::PermissionsContainer::check_ffi(self, path)
   }
 }
 

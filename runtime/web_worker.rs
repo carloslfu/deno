@@ -34,7 +34,7 @@ use deno_http::DefaultHttpPropertyExtractor;
 use deno_io::Stdio;
 use deno_kv::dynamic::MultiBackendDbHandler;
 use deno_node::NodeExtInitServices;
-use deno_permissions::PermissionsContainer;
+use deno_permissions_extended::PermissionsContainer;
 use deno_terminal::colors;
 use deno_tls::RootCertStoreProvider;
 use deno_tls::TlsKeys;

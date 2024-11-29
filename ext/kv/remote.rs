@@ -15,7 +15,7 @@ use deno_core::futures::Stream;
 use deno_core::OpState;
 use deno_fetch::create_http_client;
 use deno_fetch::CreateHttpClientOptions;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use deno_tls::rustls::RootCertStore;
 use deno_tls::Proxy;
 use deno_tls::RootCertStoreProvider;
@@ -54,10 +54,10 @@ pub trait RemoteDbHandlerPermissions {
   ) -> Result<(), PermissionCheckError>;
 }
 
-impl RemoteDbHandlerPermissions for deno_permissions::PermissionsContainer {
+impl RemoteDbHandlerPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_env(&mut self, var: &str) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_env(self, var)
+    deno_permissions_extended::PermissionsContainer::check_env(self, var)
   }
 
   #[inline(always)]
@@ -66,7 +66,7 @@ impl RemoteDbHandlerPermissions for deno_permissions::PermissionsContainer {
     url: &Url,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_net_url(self, url, api_name)
+    deno_permissions_extended::PermissionsContainer::check_net_url(self, url, api_name)
   }
 }
 

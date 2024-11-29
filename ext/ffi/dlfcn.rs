@@ -30,7 +30,7 @@ pub enum DlfcnError {
   #[error(transparent)]
   Dlopen(#[from] dlopen2::Error),
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error(transparent)]
   Other(deno_core::error::AnyError),
 }

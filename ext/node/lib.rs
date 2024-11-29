@@ -24,7 +24,7 @@ pub mod ops;
 mod polyfill;
 
 pub use deno_package_json::PackageJson;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 pub use node_resolver::PathClean;
 pub use ops::ipc::ChildPipeFd;
 pub use ops::ipc::IpcJsonStreamResource;
@@ -85,14 +85,14 @@ pub trait NodePermissions {
   ) -> Result<PathBuf, PermissionCheckError>;
 }
 
-impl NodePermissions for deno_permissions::PermissionsContainer {
+impl NodePermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_net_url(
     &mut self,
     url: &Url,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_net_url(self, url, api_name)
+    deno_permissions_extended::PermissionsContainer::check_net_url(self, url, api_name)
   }
 
   fn check_net(
@@ -100,7 +100,7 @@ impl NodePermissions for deno_permissions::PermissionsContainer {
     host: (&str, Option<u16>),
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_net(self, &host, api_name)
+    deno_permissions_extended::PermissionsContainer::check_net(self, &host, api_name)
   }
 
   #[inline(always)]
@@ -109,7 +109,7 @@ impl NodePermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: Option<&str>,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read_with_api_name(
+    deno_permissions_extended::PermissionsContainer::check_read_with_api_name(
       self, path, api_name,
     )
   }
@@ -118,11 +118,11 @@ impl NodePermissions for deno_permissions::PermissionsContainer {
     &mut self,
     path: &'a Path,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read_path(self, path, None)
+    deno_permissions_extended::PermissionsContainer::check_read_path(self, path, None)
   }
 
   fn query_read_all(&mut self) -> bool {
-    deno_permissions::PermissionsContainer::query_read_all(self)
+    deno_permissions_extended::PermissionsContainer::query_read_all(self)
   }
 
   #[inline(always)]
@@ -131,7 +131,7 @@ impl NodePermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: Option<&str>,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_with_api_name(
+    deno_permissions_extended::PermissionsContainer::check_write_with_api_name(
       self, path, api_name,
     )
   }
@@ -141,7 +141,7 @@ impl NodePermissions for deno_permissions::PermissionsContainer {
     kind: &str,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_sys(self, kind, api_name)
+    deno_permissions_extended::PermissionsContainer::check_sys(self, kind, api_name)
   }
 }
 

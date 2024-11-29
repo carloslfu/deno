@@ -1537,7 +1537,7 @@ dependencies = [
  "bytes",
  "data-url",
  "deno_core",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_tls",
  "dyn-clone",
  "error_reporter",
@@ -1567,7 +1567,7 @@ name = "deno_ffi"
 version = "0.164.0"
 dependencies = [
  "deno_core",
- "deno_permissions",
+ "deno_permissions_extended",
  "dlopen2",
  "dynasmrt",
  "libffi",
@@ -1591,7 +1591,7 @@ dependencies = [
  "deno_core",
  "deno_io",
  "deno_path_util",
- "deno_permissions",
+ "deno_permissions_extended",
  "filetime",
  "junction",
  "libc",
@@ -1705,7 +1705,7 @@ dependencies = [
  "deno_core",
  "deno_fetch",
  "deno_path_util",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_tls",
  "denokv_proto",
  "denokv_remote",
@@ -1770,7 +1770,7 @@ name = "deno_napi"
 version = "0.108.0"
 dependencies = [
  "deno_core",
- "deno_permissions",
+ "deno_permissions_extended",
  "libc",
  "libloading 0.7.4",
  "libuv-sys-lite",
@@ -1798,7 +1798,7 @@ name = "deno_net"
 version = "0.169.0"
 dependencies = [
  "deno_core",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_tls",
  "hickory-proto",
  "hickory-resolver",
@@ -1832,7 +1832,7 @@ dependencies = [
  "deno_net",
  "deno_package_json",
  "deno_path_util",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_whoami",
  "der",
  "digest",
@@ -1960,8 +1960,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "deno_permissions"
-version = "0.37.0"
+name = "deno_permissions_extended"
+version = "0.41.0"
 dependencies = [
  "deno_core",
  "deno_path_util",
@@ -2016,7 +2016,7 @@ dependencies = [
  "deno_net",
  "deno_node",
  "deno_path_util",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_terminal 0.2.0",
  "deno_tls",
  "deno_url",
@@ -2182,7 +2182,7 @@ dependencies = [
  "deno_bench_util",
  "deno_console",
  "deno_core",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_url",
  "deno_webidl",
  "encoding_rs",
@@ -2222,7 +2222,7 @@ dependencies = [
  "bytes",
  "deno_core",
  "deno_net",
- "deno_permissions",
+ "deno_permissions_extended",
  "deno_tls",
  "fastwebsockets",
  "h2 0.4.4",

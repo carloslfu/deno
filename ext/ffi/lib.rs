@@ -29,7 +29,7 @@ use symbol::Symbol;
 
 pub use call::CallError;
 pub use callback::CallbackError;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 pub use dlfcn::DlfcnError;
 pub use ir::IRError;
 pub use r#static::StaticError;
@@ -55,10 +55,10 @@ pub trait FfiPermissions {
   ) -> Result<PathBuf, PermissionCheckError>;
 }
 
-impl FfiPermissions for deno_permissions::PermissionsContainer {
+impl FfiPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_partial_no_path(&mut self) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_ffi_partial_no_path(self)
+    deno_permissions_extended::PermissionsContainer::check_ffi_partial_no_path(self)
   }
 
   #[inline(always)]
@@ -66,7 +66,7 @@ impl FfiPermissions for deno_permissions::PermissionsContainer {
     &mut self,
     path: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_ffi_partial_with_path(
+    deno_permissions_extended::PermissionsContainer::check_ffi_partial_with_path(
       self, path,
     )
   }

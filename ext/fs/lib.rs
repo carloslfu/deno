@@ -23,7 +23,7 @@ pub use crate::sync::MaybeSync;
 use crate::ops::*;
 
 use deno_io::fs::FsError;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use std::borrow::Cow;
 use std::path::Path;
 use std::path::PathBuf;
@@ -105,7 +105,7 @@ pub trait FsPermissions {
   }
 }
 
-impl FsPermissions for deno_permissions::PermissionsContainer {
+impl FsPermissions for deno_permissions_extended::PermissionsContainer {
   fn check_open<'a>(
     &mut self,
     resolved: bool,
@@ -147,7 +147,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read(self, path, api_name)
+    deno_permissions_extended::PermissionsContainer::check_read(self, path, api_name)
   }
 
   fn check_read_path<'a>(
@@ -155,7 +155,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     path: &'a Path,
     api_name: &str,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read_path(
+    deno_permissions_extended::PermissionsContainer::check_read_path(
       self,
       path,
       Some(api_name),
@@ -167,7 +167,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     display: &str,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read_blind(
+    deno_permissions_extended::PermissionsContainer::check_read_blind(
       self, path, display, api_name,
     )
   }
@@ -177,7 +177,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write(self, path, api_name)
+    deno_permissions_extended::PermissionsContainer::check_write(self, path, api_name)
   }
 
   fn check_write_path<'a>(
@@ -185,7 +185,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     path: &'a Path,
     api_name: &str,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_path(
+    deno_permissions_extended::PermissionsContainer::check_write_path(
       self, path, api_name,
     )
   }
@@ -195,7 +195,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     path: &str,
     api_name: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_partial(
+    deno_permissions_extended::PermissionsContainer::check_write_partial(
       self, path, api_name,
     )
   }
@@ -206,7 +206,7 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     display: &str,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_blind(
+    deno_permissions_extended::PermissionsContainer::check_write_blind(
       self, p, display, api_name,
     )
   }
@@ -215,14 +215,14 @@ impl FsPermissions for deno_permissions::PermissionsContainer {
     &mut self,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read_all(self, api_name)
+    deno_permissions_extended::PermissionsContainer::check_read_all(self, api_name)
   }
 
   fn check_write_all(
     &mut self,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_all(self, api_name)
+    deno_permissions_extended::PermissionsContainer::check_write_all(self, api_name)
   }
 }
 

@@ -16,8 +16,8 @@ use deno_core::CancelFuture;
 use deno_core::CancelHandle;
 use deno_core::ModuleSpecifier;
 use deno_core::OpState;
-use deno_permissions::ChildPermissionsArg;
-use deno_permissions::PermissionsContainer;
+use deno_permissions_extended::ChildPermissionsArg;
+use deno_permissions_extended::PermissionsContainer;
 use deno_web::deserialize_js_transferables;
 use deno_web::JsMessageData;
 use deno_web::MessagePortError;
@@ -123,7 +123,7 @@ pub enum CreateWorkerError {
   #[error("Classic workers are not supported.")]
   ClassicWorkers,
   #[error(transparent)]
-  Permission(deno_permissions::ChildPermissionError),
+  Permission(deno_permissions_extended::ChildPermissionError),
   #[error(transparent)]
   ModuleResolution(#[from] deno_core::ModuleResolutionError),
   #[error(transparent)]

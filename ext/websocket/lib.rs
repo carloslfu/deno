@@ -50,7 +50,7 @@ use tokio::io::ReadHalf;
 use tokio::io::WriteHalf;
 use tokio::net::TcpStream;
 
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 use fastwebsockets::CloseCode;
 use fastwebsockets::FragmentCollectorRead;
 use fastwebsockets::Frame;
@@ -116,14 +116,14 @@ pub trait WebSocketPermissions {
   ) -> Result<(), PermissionCheckError>;
 }
 
-impl WebSocketPermissions for deno_permissions::PermissionsContainer {
+impl WebSocketPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_net_url(
     &mut self,
     url: &url::Url,
     api_name: &str,
   ) -> Result<(), PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_net_url(self, url, api_name)
+    deno_permissions_extended::PermissionsContainer::check_net_url(self, url, api_name)
   }
 }
 

@@ -15,7 +15,7 @@ path = "lib.rs"
 
 [dependencies]
 deno_core.workspace = true
-deno_permissions.workspace = true
+deno_permissions_extended.workspace = true
 deno_tls.workspace = true
 hickory-proto = "0.24"
 hickory-resolver = { version = "0.24", features = ["tokio-runtime", "serde-config"] }

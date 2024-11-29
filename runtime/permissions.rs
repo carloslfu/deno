@@ -4,21 +4,21 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use deno_path_util::normalize_path;
-use deno_permissions::AllowRunDescriptor;
-use deno_permissions::AllowRunDescriptorParseResult;
-use deno_permissions::DenyRunDescriptor;
-use deno_permissions::EnvDescriptor;
-use deno_permissions::FfiDescriptor;
-use deno_permissions::ImportDescriptor;
-use deno_permissions::NetDescriptor;
-use deno_permissions::PathQueryDescriptor;
-use deno_permissions::PathResolveError;
-use deno_permissions::ReadDescriptor;
-use deno_permissions::RunDescriptorParseError;
-use deno_permissions::RunQueryDescriptor;
-use deno_permissions::SysDescriptor;
-use deno_permissions::SysDescriptorParseError;
-use deno_permissions::WriteDescriptor;
+use deno_permissions_extended::AllowRunDescriptor;
+use deno_permissions_extended::AllowRunDescriptorParseResult;
+use deno_permissions_extended::DenyRunDescriptor;
+use deno_permissions_extended::EnvDescriptor;
+use deno_permissions_extended::FfiDescriptor;
+use deno_permissions_extended::ImportDescriptor;
+use deno_permissions_extended::NetDescriptor;
+use deno_permissions_extended::PathQueryDescriptor;
+use deno_permissions_extended::PathResolveError;
+use deno_permissions_extended::ReadDescriptor;
+use deno_permissions_extended::RunDescriptorParseError;
+use deno_permissions_extended::RunQueryDescriptor;
+use deno_permissions_extended::SysDescriptor;
+use deno_permissions_extended::SysDescriptorParseError;
+use deno_permissions_extended::WriteDescriptor;
 
 #[derive(Debug)]
 pub struct RuntimePermissionDescriptorParser {
@@ -51,7 +51,7 @@ impl RuntimePermissionDescriptorParser {
   }
 }
 
-impl deno_permissions::PermissionDescriptorParser
+impl deno_permissions_extended::PermissionDescriptorParser
   for RuntimePermissionDescriptorParser
 {
   fn parse_read_descriptor(
@@ -71,23 +71,23 @@ impl deno_permissions::PermissionDescriptorParser
   fn parse_net_descriptor(
     &self,
     text: &str,
-  ) -> Result<NetDescriptor, deno_permissions::NetDescriptorParseError> {
+  ) -> Result<NetDescriptor, deno_permissions_extended::NetDescriptorParseError> {
     NetDescriptor::parse(text)
   }
 
   fn parse_import_descriptor(
     &self,
     text: &str,
-  ) -> Result<ImportDescriptor, deno_permissions::NetDescriptorParseError> {
+  ) -> Result<ImportDescriptor, deno_permissions_extended::NetDescriptorParseError> {
     ImportDescriptor::parse(text)
   }
 
   fn parse_env_descriptor(
     &self,
     text: &str,
-  ) -> Result<EnvDescriptor, deno_permissions::EnvDescriptorParseError> {
+  ) -> Result<EnvDescriptor, deno_permissions_extended::EnvDescriptorParseError> {
     if text.is_empty() {
-      Err(deno_permissions::EnvDescriptorParseError)
+      Err(deno_permissions_extended::EnvDescriptorParseError)
     } else {
       Ok(EnvDescriptor::new(text))
     }
@@ -154,7 +154,7 @@ mod test {
   use std::sync::Arc;
 
   use deno_fs::RealFs;
-  use deno_permissions::PermissionDescriptorParser;
+  use deno_permissions_extended::PermissionDescriptorParser;
 
   use super::*;
 

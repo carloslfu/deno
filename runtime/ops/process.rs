@@ -14,8 +14,8 @@ use deno_io::ChildStderrResource;
 use deno_io::ChildStdinResource;
 use deno_io::ChildStdoutResource;
 use deno_io::IntoRawIoHandle;
-use deno_permissions::PermissionsContainer;
-use deno_permissions::RunQueryDescriptor;
+use deno_permissions_extended::PermissionsContainer;
+use deno_permissions_extended::RunQueryDescriptor;
 use serde::Deserialize;
 use serde::Serialize;
 use std::borrow::Cow;
@@ -206,7 +206,7 @@ pub enum ProcessError {
   #[error("failed resolving cwd: {0}")]
   FailedResolvingCwd(#[source] std::io::Error),
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error(transparent)]
   RunPermission(#[from] CheckRunPermissionError),
   #[error(transparent)]
@@ -738,7 +738,7 @@ fn resolve_path(path: &str, cwd: &Path) -> PathBuf {
 #[derive(Debug, thiserror::Error)]
 pub enum CheckRunPermissionError {
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error("{0}")]
   Other(deno_core::error::AnyError),
 }

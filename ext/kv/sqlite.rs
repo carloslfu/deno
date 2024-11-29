@@ -20,7 +20,7 @@ use deno_core::error::AnyError;
 use deno_core::unsync::spawn_blocking;
 use deno_core::OpState;
 use deno_path_util::normalize_path;
-use deno_permissions::PermissionCheckError;
+use deno_permissions_extended::PermissionCheckError;
 pub use denokv_sqlite::SqliteBackendError;
 use denokv_sqlite::SqliteConfig;
 use denokv_sqlite::SqliteNotifier;
@@ -51,14 +51,14 @@ pub trait SqliteDbHandlerPermissions {
   ) -> Result<Cow<'a, Path>, PermissionCheckError>;
 }
 
-impl SqliteDbHandlerPermissions for deno_permissions::PermissionsContainer {
+impl SqliteDbHandlerPermissions for deno_permissions_extended::PermissionsContainer {
   #[inline(always)]
   fn check_read(
     &mut self,
     p: &str,
     api_name: &str,
   ) -> Result<PathBuf, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_read(self, p, api_name)
+    deno_permissions_extended::PermissionsContainer::check_read(self, p, api_name)
   }
 
   #[inline(always)]
@@ -67,7 +67,7 @@ impl SqliteDbHandlerPermissions for deno_permissions::PermissionsContainer {
     p: &'a Path,
     api_name: &str,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
-    deno_permissions::PermissionsContainer::check_write_path(self, p, api_name)
+    deno_permissions_extended::PermissionsContainer::check_write_path(self, p, api_name)
   }
 }
 

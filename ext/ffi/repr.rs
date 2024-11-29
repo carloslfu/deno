@@ -46,7 +46,7 @@ pub enum ReprError {
   #[error("Invalid pointer pointer, pointer is null")]
   InvalidPointer,
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
 }
 
 #[op2(fast)]

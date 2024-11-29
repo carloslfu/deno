@@ -32,7 +32,7 @@ pub enum CallError {
   #[error("Invalid FFI symbol name: '{0}'")]
   InvalidSymbol(String),
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error(transparent)]
   Resource(deno_core::error::AnyError),
   #[error(transparent)]

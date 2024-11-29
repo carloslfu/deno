@@ -13,7 +13,7 @@ use crate::NodePermissions;
 #[derive(Debug, thiserror::Error)]
 pub enum FsError {
   #[error(transparent)]
-  Permission(#[from] deno_permissions::PermissionCheckError),
+  Permission(#[from] deno_permissions_extended::PermissionCheckError),
   #[error("{0}")]
   Io(#[from] std::io::Error),
   #[cfg(windows)]
