@@ -31,6 +31,7 @@ use crate::dyn_prompter::PermissionPrompter;
 use crate::dyn_prompter::PERMISSION_EMOJI;
 
 use crate::dyn_prompter::PromptResponse;
+use crate::prompter;
 
 #[derive(Debug, thiserror::Error)]
 #[error("Requires {access}, {}", format_permission_error(.name))]
@@ -2492,8 +2493,9 @@ impl PermissionsContainer {
     &self,
     path: &str,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
-    self.check_read_with_api_name(path, Some(api_name))
+    self.check_read_with_api_name(path, Some(api_name), prompter)
   }
 
   #[must_use = "the resolved return value to mitigate time-of-check to time-of-use issues"]
@@ -2502,6 +2504,7 @@ impl PermissionsContainer {
     &self,
     path: &str,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.read;
@@ -2509,7 +2512,7 @@ impl PermissionsContainer {
       Ok(PathBuf::from(path))
     } else {
       let desc = self.descriptor_parser.parse_path_query(path)?.into_read();
-      inner.check(&desc, api_name)?;
+      inner.check(&desc, api_name, prompter)?;
       Ok(desc.0.resolved)
     }
   }
@@ -2520,6 +2523,7 @@ impl PermissionsContainer {
     &self,
     path: &'a Path,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.read;
@@ -2531,7 +2535,7 @@ impl PermissionsContainer {
         resolved: path.to_path_buf(),
       }
       .into_read();
-      inner.check(&desc, api_name)?;
+      inner.check(&desc, api_name, prompter)?;
       Ok(Cow::Owned(desc.0.resolved))
     }
   }
@@ -2544,6 +2548,7 @@ impl PermissionsContainer {
     path: &Path,
     display: &str,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.read;
@@ -2555,6 +2560,7 @@ impl PermissionsContainer {
       }
       .into_read(),
       Some(api_name),
+      prompter,
     )?;
     Ok(())
   }
@@ -2563,8 +2569,9 @@ impl PermissionsContainer {
   pub fn check_read_all(
     &self,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
-    self.inner.lock().read.check_all(Some(api_name))?;
+    self.inner.lock().read.check_all(Some(api_name), prompter)?;
     Ok(())
   }
 
@@ -2579,8 +2586,9 @@ impl PermissionsContainer {
     &self,
     path: &str,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
-    self.check_write_with_api_name(path, Some(api_name))
+    self.check_write_with_api_name(path, Some(api_name), prompter)
   }
 
   #[must_use = "the resolved return value to mitigate time-of-check to time-of-use issues"]
@@ -2589,6 +2597,7 @@ impl PermissionsContainer {
     &self,
     path: &str,
     api_name: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.write;
@@ -2596,7 +2605,7 @@ impl PermissionsContainer {
       Ok(PathBuf::from(path))
     } else {
       let desc = self.descriptor_parser.parse_path_query(path)?.into_write();
-      inner.check(&desc, api_name)?;
+      inner.check(&desc, api_name, prompter)?;
       Ok(desc.0.resolved)
     }
   }
@@ -2607,6 +2616,7 @@ impl PermissionsContainer {
     &self,
     path: &'a Path,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<Cow<'a, Path>, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.write;
@@ -2618,7 +2628,7 @@ impl PermissionsContainer {
         resolved: path.to_path_buf(),
       }
       .into_write();
-      inner.check(&desc, Some(api_name))?;
+      inner.check(&desc, Some(api_name), prompter)?;
       Ok(Cow::Owned(desc.0.resolved))
     }
   }
@@ -2627,8 +2637,13 @@ impl PermissionsContainer {
   pub fn check_write_all(
     &self,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
-    self.inner.lock().write.check_all(Some(api_name))?;
+    self
+      .inner
+      .lock()
+      .write
+      .check_all(Some(api_name), prompter)?;
     Ok(())
   }
 
@@ -2640,6 +2655,7 @@ impl PermissionsContainer {
     path: &Path,
     display: &str,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.write;
@@ -2651,6 +2667,7 @@ impl PermissionsContainer {
       }
       .into_write(),
       Some(api_name),
+      prompter,
     )?;
     Ok(())
   }
@@ -2660,6 +2677,7 @@ impl PermissionsContainer {
     &mut self,
     path: &str,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.write;
@@ -2667,7 +2685,7 @@ impl PermissionsContainer {
       Ok(PathBuf::from(path))
     } else {
       let desc = self.descriptor_parser.parse_path_query(path)?.into_write();
-      inner.check_partial(&desc, Some(api_name))?;
+      inner.check_partial(&desc, Some(api_name), prompter)?;
       Ok(desc.0.resolved)
     }
   }
@@ -2677,8 +2695,9 @@ impl PermissionsContainer {
     &mut self,
     cmd: &RunQueryDescriptor,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
-    self.inner.lock().run.check(cmd, Some(api_name))?;
+    self.inner.lock().run.check(cmd, Some(api_name), prompter)?;
     Ok(())
   }
 
@@ -2686,14 +2705,19 @@ impl PermissionsContainer {
   pub fn check_run_all(
     &mut self,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
-    self.inner.lock().run.check_all(Some(api_name))?;
+    self.inner.lock().run.check_all(Some(api_name), prompter)?;
     Ok(())
   }
 
   #[inline(always)]
-  pub fn query_run_all(&mut self, api_name: &str) -> bool {
-    self.inner.lock().run.query_all(Some(api_name))
+  pub fn query_run_all(
+    &mut self,
+    api_name: &str,
+    prompter: &mut PermissionPrompter,
+  ) -> bool {
+    self.inner.lock().run.query_all(Some(api_name), prompter)
   }
 
   #[inline(always)]
@@ -2701,35 +2725,50 @@ impl PermissionsContainer {
     &self,
     kind: &str,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     self.inner.lock().sys.check(
       &self.descriptor_parser.parse_sys_descriptor(kind)?,
       Some(api_name),
+      prompter,
     )?;
     Ok(())
   }
 
   #[inline(always)]
-  pub fn check_env(&mut self, var: &str) -> Result<(), PermissionCheckError> {
-    self.inner.lock().env.check(var, None)?;
+  pub fn check_env(
+    &mut self,
+    var: &str,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionCheckError> {
+    self.inner.lock().env.check(var, None, prompter)?;
     Ok(())
   }
 
   #[inline(always)]
-  pub fn check_env_all(&mut self) -> Result<(), PermissionCheckError> {
-    self.inner.lock().env.check_all()?;
+  pub fn check_env_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionCheckError> {
+    self.inner.lock().env.check_all(prompter)?;
     Ok(())
   }
 
   #[inline(always)]
-  pub fn check_sys_all(&mut self) -> Result<(), PermissionCheckError> {
-    self.inner.lock().sys.check_all()?;
+  pub fn check_sys_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionCheckError> {
+    self.inner.lock().sys.check_all(prompter)?;
     Ok(())
   }
 
   #[inline(always)]
-  pub fn check_ffi_all(&mut self) -> Result<(), PermissionCheckError> {
-    self.inner.lock().ffi.check_all()?;
+  pub fn check_ffi_all(
+    &mut self,
+    prompter: &mut PermissionPrompter,
+  ) -> Result<(), PermissionCheckError> {
+    self.inner.lock().ffi.check_all(prompter)?;
     Ok(())
   }
 
@@ -2738,8 +2777,9 @@ impl PermissionsContainer {
   #[inline(always)]
   pub fn check_was_allow_all_flag_passed(
     &mut self,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
-    self.inner.lock().all.check()?;
+    self.inner.lock().all.check(prompter)?;
     Ok(())
   }
 
@@ -2749,6 +2789,7 @@ impl PermissionsContainer {
     &mut self,
     path: &Path,
     _api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), &'static str> {
     let error_all = |_| "all";
 
@@ -2809,14 +2850,18 @@ impl PermissionsContainer {
         || path.starts_with("/sys")
       {
         if path.ends_with("/environ") {
-          self.check_env_all().map_err(|_| "env")?;
+          self.check_env_all(prompter).map_err(|_| "env")?;
         } else {
-          self.check_was_allow_all_flag_passed().map_err(error_all)?;
+          self
+            .check_was_allow_all_flag_passed(prompter)
+            .map_err(error_all)?;
         }
       }
     } else if cfg!(unix) {
       if path.starts_with("/dev") {
-        self.check_was_allow_all_flag_passed().map_err(error_all)?;
+        self
+          .check_was_allow_all_flag_passed(prompter)
+          .map_err(error_all)?;
       }
     } else if cfg!(target_os = "windows") {
       // \\.\nul is allowed
@@ -2839,7 +2884,9 @@ impl PermissionsContainer {
 
       // If this is a normalized drive path, accept it
       if !is_normalized_windows_drive_path(path) {
-        self.check_was_allow_all_flag_passed().map_err(error_all)?;
+        self
+          .check_was_allow_all_flag_passed(prompter)
+          .map_err(error_all)?;
       }
     } else {
       unimplemented!()
@@ -2852,13 +2899,14 @@ impl PermissionsContainer {
     &mut self,
     url: &Url,
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     let mut inner = self.inner.lock();
     if inner.net.is_allow_all() {
       return Ok(());
     }
     let desc = self.descriptor_parser.parse_net_descriptor_from_url(url)?;
-    inner.net.check(&desc, Some(api_name))?;
+    inner.net.check(&desc, Some(api_name), prompter)?;
     Ok(())
   }
 
@@ -2867,13 +2915,14 @@ impl PermissionsContainer {
     &mut self,
     host: &(T, Option<u16>),
     api_name: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.net;
     skip_check_if_is_permission_fully_granted!(inner);
     let hostname = Host::parse(host.0.as_ref())?;
     let descriptor = NetDescriptor(hostname, host.1);
-    inner.check(&descriptor, Some(api_name))?;
+    inner.check(&descriptor, Some(api_name), prompter)?;
     Ok(())
   }
 
@@ -2881,6 +2930,7 @@ impl PermissionsContainer {
   pub fn check_ffi(
     &mut self,
     path: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.ffi;
@@ -2888,7 +2938,7 @@ impl PermissionsContainer {
       Ok(PathBuf::from(path))
     } else {
       let desc = self.descriptor_parser.parse_path_query(path)?.into_ffi();
-      inner.check(&desc, None)?;
+      inner.check(&desc, None, prompter)?;
       Ok(desc.0.resolved)
     }
   }
@@ -2897,11 +2947,12 @@ impl PermissionsContainer {
   #[inline(always)]
   pub fn check_ffi_partial_no_path(
     &mut self,
+    prompter: &mut PermissionPrompter,
   ) -> Result<(), PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.ffi;
     if !inner.is_allow_all() {
-      inner.check_partial(None)?;
+      inner.check_partial(None, prompter)?;
     }
     Ok(())
   }
@@ -2911,6 +2962,7 @@ impl PermissionsContainer {
   pub fn check_ffi_partial_with_path(
     &mut self,
     path: &str,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PathBuf, PermissionCheckError> {
     let mut inner = self.inner.lock();
     let inner = &mut inner.ffi;
@@ -2918,7 +2970,7 @@ impl PermissionsContainer {
       Ok(PathBuf::from(path))
     } else {
       let desc = self.descriptor_parser.parse_path_query(path)?.into_ffi();
-      inner.check_partial(Some(&desc))?;
+      inner.check_partial(Some(&desc), prompter)?;
       Ok(desc.0.resolved)
     }
   }
@@ -3203,6 +3255,7 @@ impl PermissionsContainer {
   pub fn request_write(
     &self,
     path: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionState, PathResolveError> {
     Ok(
       self.inner.lock().write.request(
@@ -3214,6 +3267,7 @@ impl PermissionsContainer {
           })
           .transpose()?
           .as_ref(),
+        prompter,
       ),
     )
   }
@@ -3222,6 +3276,7 @@ impl PermissionsContainer {
   pub fn request_net(
     &self,
     host: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionState, NetDescriptorParseError> {
     Ok(
       self.inner.lock().net.request(
@@ -3230,19 +3285,25 @@ impl PermissionsContainer {
           Some(h) => Some(self.descriptor_parser.parse_net_descriptor(h)?),
         }
         .as_ref(),
+        prompter,
       ),
     )
   }
 
   #[inline(always)]
-  pub fn request_env(&self, var: Option<&str>) -> PermissionState {
-    self.inner.lock().env.request(var)
+  pub fn request_env(
+    &self,
+    var: Option<&str>,
+    prompter: &mut PermissionPrompter,
+  ) -> PermissionState {
+    self.inner.lock().env.request(var, prompter)
   }
 
   #[inline(always)]
   pub fn request_sys(
     &self,
     kind: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionState, SysDescriptorParseError> {
     Ok(
       self.inner.lock().sys.request(
@@ -3250,6 +3311,7 @@ impl PermissionsContainer {
           .map(|kind| self.descriptor_parser.parse_sys_descriptor(kind))
           .transpose()?
           .as_ref(),
+        prompter,
       ),
     )
   }
@@ -3258,6 +3320,7 @@ impl PermissionsContainer {
   pub fn request_run(
     &self,
     cmd: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionState, RunDescriptorParseError> {
     Ok(
       self.inner.lock().run.request(
@@ -3265,6 +3328,7 @@ impl PermissionsContainer {
           .map(|request| self.descriptor_parser.parse_run_query(request))
           .transpose()?
           .as_ref(),
+        prompter,
       ),
     )
   }
@@ -3273,6 +3337,7 @@ impl PermissionsContainer {
   pub fn request_ffi(
     &self,
     path: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionState, PathResolveError> {
     Ok(
       self.inner.lock().ffi.request(
@@ -3284,6 +3349,7 @@ impl PermissionsContainer {
           })
           .transpose()?
           .as_ref(),
+        prompter,
       ),
     )
   }
