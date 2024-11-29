@@ -3236,6 +3236,7 @@ impl PermissionsContainer {
   pub fn request_read(
     &self,
     path: Option<&str>,
+    prompter: &mut PermissionPrompter,
   ) -> Result<PermissionState, PathResolveError> {
     Ok(
       self.inner.lock().read.request(
@@ -3247,6 +3248,7 @@ impl PermissionsContainer {
           })
           .transpose()?
           .as_ref(),
+        prompter,
       ),
     )
   }
