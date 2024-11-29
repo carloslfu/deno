@@ -44,48 +44,51 @@ pub enum PromptResponse {
   AllowAll,
 }
 
-static PERMISSION_PROMPTER: Lazy<Mutex<Box<dyn PermissionPrompter>>> =
-  Lazy::new(|| Mutex::new(Box::new(TtyPrompter)));
-
-static MAYBE_BEFORE_PROMPT_CALLBACK: Lazy<Mutex<Option<PromptCallback>>> =
-  Lazy::new(|| Mutex::new(None));
-
-static MAYBE_AFTER_PROMPT_CALLBACK: Lazy<Mutex<Option<PromptCallback>>> =
-  Lazy::new(|| Mutex::new(None));
-
-pub fn permission_prompt(
-  message: &str,
-  flag: &str,
-  api_name: Option<&str>,
-  is_unary: bool,
-) -> PromptResponse {
-  if let Some(before_callback) = MAYBE_BEFORE_PROMPT_CALLBACK.lock().as_mut() {
-    before_callback();
-  }
-  let r = PERMISSION_PROMPTER
-    .lock()
-    .prompt(message, flag, api_name, is_unary);
-  if let Some(after_callback) = MAYBE_AFTER_PROMPT_CALLBACK.lock().as_mut() {
-    after_callback();
-  }
-  r
-}
-
-pub fn set_prompt_callbacks(
-  before_callback: PromptCallback,
-  after_callback: PromptCallback,
-) {
-  *MAYBE_BEFORE_PROMPT_CALLBACK.lock() = Some(before_callback);
-  *MAYBE_AFTER_PROMPT_CALLBACK.lock() = Some(after_callback);
-}
-
-pub fn set_prompter(prompter: Box<dyn PermissionPrompter>) {
-  *PERMISSION_PROMPTER.lock() = prompter;
-}
-
 pub type PromptCallback = Box<dyn FnMut() + Send + Sync>;
 
-pub trait PermissionPrompter: Send + Sync {
+pub struct PermissionPrompter {
+  prompter: Box<dyn PermissionPrompterImpl>,
+  before_callback: Option<PromptCallback>,
+  after_callback: Option<PromptCallback>,
+}
+
+impl PermissionPrompter {
+  pub fn new(prompter: Box<dyn PermissionPrompterImpl>) -> Self {
+    Self {
+      prompter,
+      before_callback: None,
+      after_callback: None,
+    }
+  }
+
+  pub fn set_callbacks(
+    &mut self,
+    before_callback: PromptCallback,
+    after_callback: PromptCallback,
+  ) {
+    self.before_callback = Some(before_callback);
+    self.after_callback = Some(after_callback);
+  }
+
+  pub fn prompt(
+    &mut self,
+    message: &str,
+    flag: &str,
+    api_name: Option<&str>,
+    is_unary: bool,
+  ) -> PromptResponse {
+    if let Some(before_callback) = self.before_callback.as_mut() {
+      before_callback();
+    }
+    let r = self.prompter.prompt(message, flag, api_name, is_unary);
+    if let Some(after_callback) = self.after_callback.as_mut() {
+      after_callback();
+    }
+    r
+  }
+}
+
+pub trait PermissionPrompterImpl: Send + Sync {
   fn prompt(
     &mut self,
     message: &str,
@@ -96,6 +99,7 @@ pub trait PermissionPrompter: Send + Sync {
 }
 
 pub struct TtyPrompter;
+
 #[cfg(unix)]
 fn clear_stdin(
   _stdin_lock: &mut StdinLock,
@@ -291,7 +295,7 @@ fn get_stdin_metadata() -> std::io::Result<std::fs::Metadata> {
   }
 }
 
-impl PermissionPrompter for TtyPrompter {
+impl PermissionPrompterImpl for TtyPrompter {
   fn prompt(
     &mut self,
     message: &str,
@@ -468,7 +472,7 @@ pub mod tests {
 
   pub struct TestPrompter;
 
-  impl PermissionPrompter for TestPrompter {
+  impl PermissionPrompterImpl for TestPrompter {
     fn prompt(
       &mut self,
       _message: &str,

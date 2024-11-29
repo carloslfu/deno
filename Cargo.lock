@@ -1183,7 +1183,7 @@ dependencies = [
  "deno_package_json",
  "deno_path_util",
  "deno_resolver",
- "deno_runtime",
+ "deno_runtime_extended",
  "deno_semver",
  "deno_task_shell",
  "deno_terminal 0.2.0",
@@ -1961,7 +1961,7 @@ dependencies = [
 
 [[package]]
 name = "deno_permissions_extended"
-version = "0.38.0"
+version = "0.39.0"
 dependencies = [
  "deno_core",
  "deno_path_util",
@@ -1994,7 +1994,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "deno_runtime"
+name = "deno_runtime_extended"
 version = "0.186.0"
 dependencies = [
  "color-print",

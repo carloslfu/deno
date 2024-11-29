@@ -1,7 +1,7 @@
 // Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.
 
-use ::deno_permissions::PermissionState;
-use ::deno_permissions::PermissionsContainer;
+use ::deno_permissions_extended::PermissionState;
+use ::deno_permissions_extended::PermissionsContainer;
 use deno_core::op2;
 use deno_core::OpState;
 use serde::Deserialize;
@@ -50,13 +50,19 @@ pub enum PermissionError {
   #[error("No such permission name: {0}")]
   InvalidPermissionName(String),
   #[error("{0}")]
-  PathResolve(#[from] ::deno_permissions::PathResolveError),
+  PathResolve(#[from] ::deno_permissions_extended::PathResolveError),
   #[error("{0}")]
-  NetDescriptorParse(#[from] ::deno_permissions::NetDescriptorParseError),
+  NetDescriptorParse(
+    #[from] ::deno_permissions_extended::NetDescriptorParseError,
+  ),
   #[error("{0}")]
-  SysDescriptorParse(#[from] ::deno_permissions::SysDescriptorParseError),
+  SysDescriptorParse(
+    #[from] ::deno_permissions_extended::SysDescriptorParseError,
+  ),
   #[error("{0}")]
-  RunDescriptorParse(#[from] ::deno_permissions::RunDescriptorParseError),
+  RunDescriptorParse(
+    #[from] ::deno_permissions_extended::RunDescriptorParseError,
+  ),
 }
 
 #[op2]

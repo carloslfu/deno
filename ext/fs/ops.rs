@@ -225,6 +225,7 @@ where
   let mut access_check =
     async_permission_check::<P>(state.clone(), "Deno.open()");
   let fs = state.borrow().borrow::<FileSystemRc>().clone();
+  // here --
   let file = fs
     .open_async(path.clone(), options, Some(&mut access_check))
     .await
