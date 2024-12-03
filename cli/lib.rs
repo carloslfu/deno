@@ -55,8 +55,8 @@ use std::future::Future;
 use std::ops::Deref;
 use std::sync::Arc;
 
+pub use deno_core;
 pub use deno_runtime;
-pub use deno_runtime::deno_core;
 pub use deno_runtime::deno_node;
 
 pub fn run(cmd: &str, extensions: Vec<Extension>) -> String {
