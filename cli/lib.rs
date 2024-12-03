@@ -41,8 +41,8 @@ use deno_core::error::AnyError;
 use deno_core::error::JsError;
 use deno_core::futures::FutureExt;
 use deno_core::unsync::JoinHandle;
-use deno_npm::resolution::SnapshotFromLockfileError;
-use deno_runtime::fmt_errors::format_js_error;
+pub use deno_npm::resolution::SnapshotFromLockfileError;
+pub use deno_runtime::fmt_errors::format_js_error;
 use deno_terminal::colors;
 use factory::CliFactory;
 use std::future::Future;
@@ -52,6 +52,7 @@ use tools::run::maybe_npm_install;
 
 pub use deno_core;
 pub use deno_core::op2;
+pub use deno_npm;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
