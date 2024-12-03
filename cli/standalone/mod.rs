@@ -932,7 +932,7 @@ pub async fn run(data: StandaloneData) -> Result<i32, AnyError> {
   deno_core::JsRuntime::init_platform(None, true);
 
   let mut worker = worker_factory
-    .create_main_worker(WorkerExecutionMode::Run, main_module)
+    .create_main_worker(WorkerExecutionMode::Run, main_module, vec![])
     .await?;
 
   let exit_code = worker.run().await?;

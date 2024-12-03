@@ -34,6 +34,7 @@ pub use crate::util::v8::get_v8_flags_from_env;
 pub use crate::util::v8::init_v8_flags;
 
 use args::TaskFlags;
+use deno_core::Extension;
 use deno_resolver::npm::ByonmResolvePkgFolderFromDenoReqError;
 use deno_resolver::npm::ResolvePkgFolderFromDenoReqError;
 use deno_runtime::WorkerExecutionMode;
@@ -57,7 +58,7 @@ use std::sync::Arc;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
-pub fn run(cmd: &str) -> String {
+pub fn run(cmd: &str, extensions: Vec<Extension>) -> String {
   let args: Vec<_> = vec!["deno", "run", cmd]
     .into_iter()
     .map(std::ffi::OsString::from)
@@ -71,7 +72,7 @@ pub fn run(cmd: &str) -> String {
 
     println!("flags: {:?}", flags);
 
-    run_script(Arc::new(flags)).await
+    run_script(Arc::new(flags), extensions).await
   };
 
   let result = create_and_run_current_thread_with_maybe_metrics(future);
@@ -85,13 +86,17 @@ pub fn run(cmd: &str) -> String {
   }
 }
 
-pub async fn run_script(flags: Arc<Flags>) -> Result<i32, AnyError> {
+pub async fn run_script(
+  flags: Arc<Flags>,
+  extensions: Vec<Extension>,
+) -> Result<i32, AnyError> {
   let handle = match flags.subcommand.clone() {
     DenoSubcommand::Run(run_flags) => spawn_subcommand(async move {
       let result = tools::run::run_script(
         WorkerExecutionMode::Run,
         flags.clone(),
         run_flags.watch,
+        extensions,
       )
       .await;
 
@@ -102,25 +107,34 @@ pub async fn run_script(flags: Arc<Flags>) -> Result<i32, AnyError> {
             ByonmResolvePkgFolderFromDenoReqError::UnmatchedReq(_),
           )) = script_err.downcast_ref::<ResolvePkgFolderFromDenoReqError>()
           {
-            if flags.node_modules_dir.is_none() {
-              let mut flags = flags.deref().clone();
-              let watch = match &flags.subcommand {
-                DenoSubcommand::Run(run_flags) => run_flags.watch.clone(),
-                _ => unreachable!(),
-              };
-              flags.node_modules_dir =
-                Some(deno_config::deno_json::NodeModulesDirMode::None);
-              // use the current lockfile, but don't write it out
-              if flags.frozen_lockfile.is_none() {
-                flags.internal.lockfile_skip_write = true;
-              }
-              return tools::run::run_script(
-                WorkerExecutionMode::Run,
-                Arc::new(flags),
-                watch,
-              )
-              .await;
-            }
+            println!(
+              "ResolvePkgFolderFromDenoReqError path found: {:?}",
+              script_err
+            );
+            // disabled for now because extensions cannot be cloned
+            // if flags.node_modules_dir.is_none() {
+            //   let mut flags = flags.deref().clone();
+            //   let watch = match &flags.subcommand {
+            //     DenoSubcommand::Run(run_flags) => run_flags.watch.clone(),
+            //     _ => unreachable!(),
+            //   };
+            //   flags.node_modules_dir =
+            //     Some(deno_config::deno_json::NodeModulesDirMode::None);
+            //   // use the current lockfile, but don't write it out
+            //   if flags.frozen_lockfile.is_none() {
+            //     flags.internal.lockfile_skip_write = true;
+            //   }
+            //   return tools::run::run_script(
+            //     WorkerExecutionMode::Run,
+            //     Arc::new(flags),
+            //     watch,
+            //     // cannot clone extensions
+            //     extensions,
+            //   )
+            //   .await;
+            // }
+
+            ()
           }
           let script_err_msg = script_err.to_string();
           if script_err_msg.starts_with(MODULE_NOT_FOUND)

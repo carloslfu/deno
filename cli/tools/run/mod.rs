@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use deno_config::deno_json::NodeModulesDirMode;
 use deno_core::error::AnyError;
+use deno_core::Extension;
 use deno_runtime::WorkerExecutionMode;
 
 use crate::args::EvalFlags;
@@ -12,8 +13,6 @@ use crate::args::Flags;
 use crate::args::WatchFlagsWithPaths;
 use crate::factory::CliFactory;
 use crate::file_fetcher::File;
-use crate::util;
-use crate::util::file_watcher::WatcherRestartMode;
 
 pub mod hmr;
 
@@ -44,11 +43,14 @@ pub async fn run_script(
   mode: WorkerExecutionMode,
   flags: Arc<Flags>,
   watch: Option<WatchFlagsWithPaths>,
+  extensions: Vec<Extension>,
 ) -> Result<i32, AnyError> {
   check_permission_before_script(&flags);
 
   if let Some(watch_flags) = watch {
-    return run_with_watch(mode, flags, watch_flags).await;
+    println!("watch mode disabled because extensions cannot be cloned");
+    // return run_with_watch(mode, flags, watch_flags, extensions).await;
+    ()
   }
 
   // TODO(bartlomieju): actually I think it will also fail if there's an import
@@ -76,7 +78,7 @@ pub async fn run_script(
 
   let worker_factory = factory.create_cli_main_worker_factory().await?;
   let mut worker = worker_factory
-    .create_main_worker(mode, main_module.clone())
+    .create_main_worker(mode, main_module.clone(), extensions)
     .await?;
 
   let exit_code = worker.run().await?;
@@ -103,64 +105,10 @@ pub async fn run_from_stdin(flags: Arc<Flags>) -> Result<i32, AnyError> {
   });
 
   let mut worker = worker_factory
-    .create_main_worker(WorkerExecutionMode::Run, main_module.clone())
+    .create_main_worker(WorkerExecutionMode::Run, main_module.clone(), vec![])
     .await?;
   let exit_code = worker.run().await?;
   Ok(exit_code)
-}
-
-// TODO(bartlomieju): this function is not handling `exit_code` set by the runtime
-// code properly.
-async fn run_with_watch(
-  mode: WorkerExecutionMode,
-  flags: Arc<Flags>,
-  watch_flags: WatchFlagsWithPaths,
-) -> Result<i32, AnyError> {
-  util::file_watcher::watch_recv(
-    flags,
-    util::file_watcher::PrintConfig::new_with_banner(
-      if watch_flags.hmr { "HMR" } else { "Watcher" },
-      "Process",
-      !watch_flags.no_clear_screen,
-    ),
-    WatcherRestartMode::Automatic,
-    move |flags, watcher_communicator, changed_paths| {
-      watcher_communicator.show_path_changed(changed_paths.clone());
-      Ok(async move {
-        let factory = CliFactory::from_flags_for_watcher(
-          flags,
-          watcher_communicator.clone(),
-        );
-        let cli_options = factory.cli_options()?;
-        let main_module = cli_options.resolve_main_module()?;
-
-        if main_module.scheme() == "npm" {
-          set_npm_user_agent();
-        }
-
-        maybe_npm_install(&factory).await?;
-
-        let _ = watcher_communicator.watch_paths(cli_options.watch_paths());
-
-        let mut worker = factory
-          .create_cli_main_worker_factory()
-          .await?
-          .create_main_worker(mode, main_module.clone())
-          .await?;
-
-        if watch_flags.hmr {
-          worker.run().await?;
-        } else {
-          worker.run_for_watcher().await?;
-        }
-
-        Ok(())
-      })
-    },
-  )
-  .await?;
-
-  Ok(0)
 }
 
 pub async fn eval_command(
@@ -191,7 +139,7 @@ pub async fn eval_command(
 
   let worker_factory = factory.create_cli_main_worker_factory().await?;
   let mut worker = worker_factory
-    .create_main_worker(WorkerExecutionMode::Eval, main_module.clone())
+    .create_main_worker(WorkerExecutionMode::Eval, main_module.clone(), vec![])
     .await?;
   let exit_code = worker.run().await?;
   Ok(exit_code)

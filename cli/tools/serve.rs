@@ -70,6 +70,7 @@ async fn do_serve(
         worker_count,
       },
       main_module.clone(),
+      vec![],
     )
     .await?;
   let worker_count = match worker_count {
@@ -127,6 +128,7 @@ async fn run_worker(
         worker_count: Some(worker_count),
       },
       main_module,
+      vec![],
     )
     .await?;
   if hmr {

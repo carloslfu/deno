@@ -456,13 +456,14 @@ impl CliMainWorkerFactory {
     &self,
     mode: WorkerExecutionMode,
     main_module: ModuleSpecifier,
+    extensions: Vec<Extension>,
   ) -> Result<CliMainWorker, AnyError> {
     self
       .create_custom_worker(
         mode,
         main_module,
         self.shared.root_permissions.clone(),
-        vec![],
+        extensions,
         Default::default(),
       )
       .await
