@@ -33,10 +33,7 @@ pub use crate::util::display;
 pub use crate::util::v8::get_v8_flags_from_env;
 pub use crate::util::v8::init_v8_flags;
 
-use args::TaskFlags;
 use deno_core::Extension;
-use deno_resolver::npm::ByonmResolvePkgFolderFromDenoReqError;
-use deno_resolver::npm::ResolvePkgFolderFromDenoReqError;
 use deno_runtime::WorkerExecutionMode;
 pub use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
 
@@ -46,162 +43,58 @@ use deno_core::futures::FutureExt;
 use deno_core::unsync::JoinHandle;
 use deno_npm::resolution::SnapshotFromLockfileError;
 use deno_runtime::fmt_errors::format_js_error;
-use deno_runtime::tokio_util::create_and_run_current_thread_with_maybe_metrics;
 use deno_terminal::colors;
 use factory::CliFactory;
-use standalone::MODULE_NOT_FOUND;
-use standalone::UNSUPPORTED_SCHEME;
 use std::future::Future;
-use std::ops::Deref;
 use std::sync::Arc;
+use tools::run::check_permission_before_script;
+use tools::run::maybe_npm_install;
 
 pub use deno_core;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
-pub fn run_file(file_path: &str, extensions: Vec<Extension>) {}
-
-pub fn run(cmd: &str, extensions: Vec<Extension>) -> String {
-  let args: Vec<_> = vec!["deno", "run", cmd]
+pub async fn run_file(
+  file_path: &str,
+  extensions: Vec<Extension>,
+) -> Result<i32, AnyError> {
+  let args: Vec<_> = vec!["deno", "run", file_path]
     .into_iter()
     .map(std::ffi::OsString::from)
     .collect();
 
-  let future = async move {
-    // NOTE(lucacasonato): due to new PKU feature introduced in V8 11.6 we need to
-    // initialize the V8 platform on a parent thread of all threads that will spawn
-    // V8 isolates.
-    let flags = resolve_flags_and_init(args)?;
+  let flags = resolve_flags_and_init(args)?;
 
-    run_script(Arc::new(flags), extensions).await
-  };
+  check_permission_before_script(&flags);
 
-  let result = create_and_run_current_thread_with_maybe_metrics(future);
+  // TODO(bartlomieju): actually I think it will also fail if there's an import
+  // map specified and bare specifier is used on the command line
+  let factory = CliFactory::from_flags(Arc::new(flags));
+  let cli_options = factory.cli_options()?;
 
-  #[cfg(feature = "dhat-heap")]
-  drop(profiler);
+  let main_module = cli_options.resolve_main_module()?;
 
-  match result {
-    Ok(exit_code) => std::process::exit(exit_code),
-    Err(err) => exit_for_error(err),
+  if main_module.scheme() == "npm" {
+    set_npm_user_agent();
   }
-}
 
-pub async fn run_script(
-  flags: Arc<Flags>,
-  extensions: Vec<Extension>,
-) -> Result<i32, AnyError> {
-  let handle = match flags.subcommand.clone() {
-    DenoSubcommand::Run(run_flags) => spawn_subcommand(async move {
-      println!("👀 run_flags: {:?}", run_flags);
-      let result = tools::run::run_script(
-        WorkerExecutionMode::Run,
-        flags.clone(),
-        run_flags.watch,
-        extensions,
-      )
-      .await;
+  maybe_npm_install(&factory).await?;
 
-      match result {
-        Ok(v) => Ok(v),
-        Err(script_err) => {
-          println!("👀 script_err: {:?}", script_err);
+  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let mut worker = worker_factory
+    .create_main_worker(
+      WorkerExecutionMode::Run,
+      main_module.clone(),
+      extensions,
+    )
+    .await?;
 
-          if let Some(ResolvePkgFolderFromDenoReqError::Byonm(
-            ByonmResolvePkgFolderFromDenoReqError::UnmatchedReq(_),
-          )) = script_err.downcast_ref::<ResolvePkgFolderFromDenoReqError>()
-          {
-            println!(
-              "ResolvePkgFolderFromDenoReqError path found: {:?}",
-              script_err
-            );
-            // disabled for now because extensions cannot be cloned
-            // if flags.node_modules_dir.is_none() {
-            //   let mut flags = flags.deref().clone();
-            //   let watch = match &flags.subcommand {
-            //     DenoSubcommand::Run(run_flags) => run_flags.watch.clone(),
-            //     _ => unreachable!(),
-            //   };
-            //   flags.node_modules_dir =
-            //     Some(deno_config::deno_json::NodeModulesDirMode::None);
-            //   // use the current lockfile, but don't write it out
-            //   if flags.frozen_lockfile.is_none() {
-            //     flags.internal.lockfile_skip_write = true;
-            //   }
-            //   return tools::run::run_script(
-            //     WorkerExecutionMode::Run,
-            //     Arc::new(flags),
-            //     watch,
-            //     // cannot clone extensions
-            //     extensions,
-            //   )
-            //   .await;
-            // }
+  println!("👀 worker");
 
-            ()
-          }
-          let script_err_msg = script_err.to_string();
-          if script_err_msg.starts_with(MODULE_NOT_FOUND)
-            || script_err_msg.starts_with(UNSUPPORTED_SCHEME)
-          {
-            if run_flags.bare {
-              let mut cmd = args::clap_root();
-              cmd.build();
-              let command_names = cmd
-                .get_subcommands()
-                .map(|command| command.get_name())
-                .collect::<Vec<_>>();
-              let suggestions =
-                args::did_you_mean(&run_flags.script, command_names);
-              if !suggestions.is_empty() {
-                let mut error =
-                  clap::error::Error::<clap::error::DefaultFormatter>::new(
-                    clap::error::ErrorKind::InvalidSubcommand,
-                  )
-                  .with_cmd(&cmd);
-                error.insert(
-                  clap::error::ContextKind::SuggestedSubcommand,
-                  clap::error::ContextValue::Strings(suggestions),
-                );
+  let exit_code = worker.run().await?;
 
-                Err(error.into())
-              } else {
-                Err(script_err)
-              }
-            } else {
-              let mut new_flags = flags.deref().clone();
-              let task_flags = TaskFlags {
-                cwd: None,
-                task: Some(run_flags.script.clone()),
-                is_run: true,
-                recursive: false,
-                filter: None,
-                eval: false,
-              };
-              new_flags.subcommand = DenoSubcommand::Task(task_flags.clone());
-              let result = tools::task::execute_script(
-                Arc::new(new_flags),
-                task_flags.clone(),
-              )
-              .await;
-              match result {
-                Ok(v) => Ok(v),
-                Err(_) => {
-                  // Return script error for backwards compatibility.
-                  Err(script_err)
-                }
-              }
-            }
-          } else {
-            Err(script_err)
-          }
-        }
-      }
-    }),
-    _ => unreachable!(),
-  };
-
-  handle.await?
+  println!("👀 exit_code: {:?}", exit_code);
+  Ok(exit_code)
 }
 
 fn resolve_flags_and_init(
@@ -324,4 +217,14 @@ pub(crate) fn unstable_exit_cb(feature: &str, api_name: &str) {
     feature
   );
   std::process::exit(70);
+}
+
+fn set_npm_user_agent() {
+  static ONCE: std::sync::Once = std::sync::Once::new();
+  ONCE.call_once(|| {
+    std::env::set_var(
+      crate::npm::NPM_CONFIG_USER_AGENT_ENV_VAR,
+      crate::npm::get_npm_config_user_agent(),
+    );
+  });
 }

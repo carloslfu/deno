@@ -43,7 +43,6 @@ pub async fn run_script(
   mode: WorkerExecutionMode,
   flags: Arc<Flags>,
   watch: Option<WatchFlagsWithPaths>,
-  extensions: Vec<Extension>,
 ) -> Result<i32, AnyError> {
   check_permission_before_script(&flags);
 
@@ -78,7 +77,7 @@ pub async fn run_script(
 
   let worker_factory = factory.create_cli_main_worker_factory().await?;
   let mut worker = worker_factory
-    .create_main_worker(mode, main_module.clone(), extensions)
+    .create_main_worker(mode, main_module.clone(), vec![])
     .await?;
 
   println!("👀 worker");

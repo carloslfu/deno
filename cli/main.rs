@@ -202,7 +202,6 @@ async fn run_subcommand(flags: Arc<Flags>) -> Result<i32, AnyError> {
           WorkerExecutionMode::Run,
           flags.clone(),
           run_flags.watch,
-          vec![],
         )
         .await;
         match result {
@@ -220,7 +219,7 @@ async fn run_subcommand(flags: Arc<Flags>) -> Result<i32, AnyError> {
                 if flags.frozen_lockfile.is_none() {
                   flags.internal.lockfile_skip_write = true;
                 }
-                return tools::run::run_script(WorkerExecutionMode::Run, Arc::new(flags), watch, vec![]).await;
+                return tools::run::run_script(WorkerExecutionMode::Run, Arc::new(flags), watch).await;
               }
             }
             let script_err_msg = script_err.to_string();
