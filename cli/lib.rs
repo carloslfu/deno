@@ -71,8 +71,6 @@ pub fn run(cmd: &str, extensions: Vec<Extension>) -> String {
     // V8 isolates.
     let flags = resolve_flags_and_init(args)?;
 
-    println!("flags: {:?}", flags);
-
     run_script(Arc::new(flags), extensions).await
   };
 
