@@ -2,11 +2,11 @@
 
 [package]
 name = "deno_lib_ext"
-version = "0.3.1"
+version = "0.3.3"
 authors.workspace = true
-default-run = "deno"
+# default-run = "deno"
 edition.workspace = true
-exclude = ["bench/testdata/lsp_benchdata/"]
+# exclude = ["bench/testdata/lsp_benchdata/"]
 license.workspace = true
 repository = "https://github.com/carloslfu/deno"
 description = "Provides an unofficial Deno extended library"
@@ -41,7 +41,7 @@ harness = false
 path = "./bench/lsp_bench_standalone.rs"
 
 [features]
-default = ["upgrade", "__vendored_zlib_ng"]
+default = []
 # A feature that enables heap profiling with dhat on Linux.
 # 1. Compile with `cargo build --profile=release-with-debug --features=dhat-heap`
 # 2. Run the executable. It will output a dhat-heap.json file.
@@ -173,7 +173,7 @@ uuid = { workspace = true, features = ["serde"] }
 walkdir = "=2.3.2"
 which.workspace = true
 zeromq.workspace = true
-zip = { version = "2.1.6", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "=2.1.6", default-features = false, features = ["deflate-flate2"] }
 zstd.workspace = true
 
 [target.'cfg(windows)'.dependencies]
