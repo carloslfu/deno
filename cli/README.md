@@ -1,7 +1,5 @@
-# Deno CLI Crate
+# deno_lib_extended (unofficial)
 
-[![crates](https://img.shields.io/crates/v/deno.svg)](https://crates.io/crates/deno)
+Fully-featured and extensible Deno crate for embedding Deno in your Rust app. The current version is on par with [Deno](https://github.com/denoland/deno) v2.1.2 which is where most of the files come from. This project adds a few changes and adaptations to make Deno easy to work with as a library.
 
-This provides the actual deno executable and the user-facing APIs.
-
-The deno crate uses the deno_core to provide the executable.
+This is intended for use with the `deno_permissions_extended` crate.
