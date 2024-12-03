@@ -59,6 +59,8 @@ pub use deno_core;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
+pub fn run_file(file_path: &str, extensions: Vec<Extension>) {}
+
 pub fn run(cmd: &str, extensions: Vec<Extension>) -> String {
   let args: Vec<_> = vec!["deno", "run", cmd]
     .into_iter()
@@ -91,6 +93,7 @@ pub async fn run_script(
 ) -> Result<i32, AnyError> {
   let handle = match flags.subcommand.clone() {
     DenoSubcommand::Run(run_flags) => spawn_subcommand(async move {
+      println!("👀 run_flags: {:?}", run_flags);
       let result = tools::run::run_script(
         WorkerExecutionMode::Run,
         flags.clone(),
@@ -102,6 +105,8 @@ pub async fn run_script(
       match result {
         Ok(v) => Ok(v),
         Err(script_err) => {
+          println!("👀 script_err: {:?}", script_err);
+
           if let Some(ResolvePkgFolderFromDenoReqError::Byonm(
             ByonmResolvePkgFolderFromDenoReqError::UnmatchedReq(_),
           )) = script_err.downcast_ref::<ResolvePkgFolderFromDenoReqError>()

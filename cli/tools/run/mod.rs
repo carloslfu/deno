@@ -81,7 +81,11 @@ pub async fn run_script(
     .create_main_worker(mode, main_module.clone(), extensions)
     .await?;
 
+  println!("👀 worker");
+
   let exit_code = worker.run().await?;
+
+  println!("👀 exit_code: {:?}", exit_code);
   Ok(exit_code)
 }
 

@@ -458,6 +458,7 @@ impl CliMainWorkerFactory {
     main_module: ModuleSpecifier,
     extensions: Vec<Extension>,
   ) -> Result<CliMainWorker, AnyError> {
+    println!("👀 create_main_worker");
     self
       .create_custom_worker(
         mode,
