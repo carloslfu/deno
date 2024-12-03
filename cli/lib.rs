@@ -51,6 +51,7 @@ use tools::run::check_permission_before_script;
 use tools::run::maybe_npm_install;
 
 pub use deno_core;
+pub use deno_core::op2;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
