@@ -338,7 +338,6 @@ async fn init_npm(name: &str, args: Vec<String>) -> Result<i32, AnyError> {
     WorkerExecutionMode::Run,
     new_flags.into(),
     None,
-    vec![],
   )
   .await
 }

@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use deno_config::deno_json::NodeModulesDirMode;
 use deno_core::error::AnyError;
-use deno_core::Extension;
 use deno_runtime::WorkerExecutionMode;
 
 use crate::args::EvalFlags;
