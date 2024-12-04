@@ -622,6 +622,11 @@ impl CliMainWorkerFactory {
       ),
     };
 
+    println!(
+      "👀 FINAL options.skip_op_registration: {:?}",
+      options.skip_op_registration
+    );
+
     let mut worker = MainWorker::bootstrap_from_options(
       main_module.clone(),
       services,
