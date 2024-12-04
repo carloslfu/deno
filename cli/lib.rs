@@ -58,7 +58,7 @@ pub use deno_runtime::deno_node;
 
 pub async fn run_file(
   file_path: &str,
-  extensions: Vec<Extension>,
+  mut extensions: Vec<deno_runtime::deno_core::Extension>,
 ) -> Result<i32, AnyError> {
   let args: Vec<_> = vec!["deno", "run", file_path]
     .into_iter()
@@ -83,11 +83,14 @@ pub async fn run_file(
   maybe_npm_install(&factory).await?;
 
   let worker_factory = factory.create_cli_main_worker_factory().await?;
+
+  let mut _extensions = std::mem::take(&mut extensions);
+
   let mut worker = worker_factory
     .create_main_worker(
       WorkerExecutionMode::Run,
       main_module.clone(),
-      extensions,
+      _extensions,
     )
     .await?;
 
@@ -99,9 +102,9 @@ pub async fn run_file(
   Ok(exit_code)
 }
 
-fn resolve_flags_and_init(
+pub fn resolve_flags_and_init(
   args: Vec<std::ffi::OsString>,
-) -> Result<Flags, AnyError> {
+) -> Result<deno_lib_ext::Flags, AnyError> {
   let flags = match flags_from_vec(args) {
     Ok(flags) => flags,
     Err(err @ clap::Error { .. })
@@ -122,11 +125,11 @@ fn resolve_flags_and_init(
 
   // TODO(bartlomieju): remove in Deno v2.5 and hard error then.
   if flags.unstable_config.legacy_flag_enabled {
-    log::warn!(
-      "⚠️  {}",
-      colors::yellow(
-        "The `--unstable` flag has been removed in Deno 2.0. Use granular `--unstable-*` flags instead.\nLearn more at: https://docs.deno.com/runtime/manual/tools/unstable_flags"
-      )
+    println!(
+            "⚠️  {}",
+            (
+                "The `--unstable` flag has been removed in Deno 2.0. Use granular `--unstable-*` flags instead.\nLearn more at: https://docs.deno.com/runtime/manual/tools/unstable_flags"
+            )
     );
   }
 
@@ -152,7 +155,7 @@ fn resolve_flags_and_init(
   Ok(flags)
 }
 
-fn exit_for_error(error: AnyError) -> ! {
+pub fn exit_for_error(error: AnyError) -> ! {
   let mut error_string = format!("{error:?}");
   let mut error_code = 1;
 
@@ -168,60 +171,12 @@ fn exit_for_error(error: AnyError) -> ! {
   exit_with_message(&error_string, error_code);
 }
 
-/// Ensure that the subcommand runs in a task, rather than being directly executed. Since some of these
-/// futures are very large, this prevents the stack from getting blown out from passing them by value up
-/// the callchain (especially in debug mode when Rust doesn't have a chance to elide copies!).
-#[inline(always)]
-fn spawn_subcommand<F: Future<Output = T> + 'static, T: SubcommandOutput>(
-  f: F,
-) -> JoinHandle<Result<i32, AnyError>> {
-  // the boxed_local() is important in order to get windows to not blow the stack in debug
-  deno_core::unsync::spawn(
-    async move { f.map(|r| r.output()).await }.boxed_local(),
-  )
-}
-
-fn exit_with_message(message: &str, code: i32) -> ! {
-  log::error!(
-    "{}: {}",
-    colors::red_bold("error"),
-    message.trim_start_matches("error: ")
-  );
+pub fn exit_with_message(message: &str, code: i32) -> ! {
+  println!("{}: {}", "error", message.trim_start_matches("error: "));
   std::process::exit(code);
 }
 
-/// Ensures that all subcommands return an i32 exit code and an [`AnyError`] error type.
-trait SubcommandOutput {
-  fn output(self) -> Result<i32, AnyError>;
-}
-
-impl SubcommandOutput for Result<i32, AnyError> {
-  fn output(self) -> Result<i32, AnyError> {
-    self
-  }
-}
-
-impl SubcommandOutput for Result<(), AnyError> {
-  fn output(self) -> Result<i32, AnyError> {
-    self.map(|_| 0)
-  }
-}
-
-impl SubcommandOutput for Result<(), std::io::Error> {
-  fn output(self) -> Result<i32, AnyError> {
-    self.map(|_| 0).map_err(|e| e.into())
-  }
-}
-
-pub(crate) fn unstable_exit_cb(feature: &str, api_name: &str) {
-  log::error!(
-    "Unstable API '{api_name}'. The `--unstable-{}` flag must be provided.",
-    feature
-  );
-  std::process::exit(70);
-}
-
-fn set_npm_user_agent() {
+pub fn set_npm_user_agent() {
   static ONCE: std::sync::Once = std::sync::Once::new();
   ONCE.call_once(|| {
     std::env::set_var(

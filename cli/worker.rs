@@ -456,15 +456,16 @@ impl CliMainWorkerFactory {
     &self,
     mode: WorkerExecutionMode,
     main_module: ModuleSpecifier,
-    extensions: Vec<Extension>,
+    mut extensions: Vec<Extension>,
   ) -> Result<CliMainWorker, AnyError> {
-    println!("👀 create_main_worker");
+    let mut _extensions = std::mem::take(&mut extensions);
+
     self
       .create_custom_worker(
         mode,
         main_module,
         self.shared.root_permissions.clone(),
-        extensions,
+        _extensions,
         Default::default(),
       )
       .await
