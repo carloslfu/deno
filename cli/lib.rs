@@ -185,3 +185,11 @@ pub fn set_npm_user_agent() {
     );
   });
 }
+
+pub(crate) fn unstable_exit_cb(feature: &str, api_name: &str) {
+  log::error!(
+    "Unstable API '{api_name}'. The `--unstable-{}` flag must be provided.",
+    feature
+  );
+  deno_runtime::exit(70);
+}
