@@ -1012,6 +1012,11 @@ impl CliFactory {
         None
       };
 
+    println!(
+      "--- skip_op_registration: {:?}",
+      cli_options.sub_command().is_run()
+    );
+
     Ok(CliMainWorkerOptions {
       argv: cli_options.argv().clone(),
       // This optimization is only available for "run" subcommand

@@ -405,13 +405,13 @@ pub struct CliMainWorkerFactory {
   shared: Arc<SharedWorkerState>,
 }
 
-#[deno_runtime::deno_core::op2]
+#[deno_core::op2]
 #[string]
 fn op_my_fn() -> Option<String> {
   Some("hello".to_string())
 }
 
-deno_runtime::deno_core::extension!(
+deno_core::extension!(
   my_extension,
   ops = [op_my_fn],
   esm_entry_point = "ext:my_extension/my_extension.js",
