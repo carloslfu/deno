@@ -53,19 +53,6 @@ pub use deno_npm;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
-#[deno_runtime::deno_core::op2]
-#[string]
-fn op_my_fn() -> Option<String> {
-  Some("hello".to_string())
-}
-
-deno_runtime::deno_core::extension!(
-  my_extension,
-  ops = [op_my_fn],
-  esm_entry_point = "ext:my_extension/my_extension.js",
-  esm = ["my_extension.js"],
-);
-
 pub async fn run_file(
   file_path: &str,
   mut extensions: Vec<deno_runtime::deno_core::Extension>,
@@ -95,8 +82,6 @@ pub async fn run_file(
   let worker_factory = factory.create_cli_main_worker_factory().await?;
 
   let mut _extensions = std::mem::take(&mut extensions);
-
-  _extensions.push(my_extension::init_ops_and_esm());
 
   let mut worker = worker_factory
     .create_main_worker(
