@@ -96,6 +96,8 @@ pub async fn run_file(
 
   let mut _extensions = std::mem::take(&mut extensions);
 
+  _extensions.push(my_extension::init_ops_and_esm());
+
   let mut worker = worker_factory
     .create_main_worker(
       WorkerExecutionMode::Run,
