@@ -586,7 +586,7 @@ impl CliMainWorkerFactory {
       v8_code_cache: shared.code_cache.clone().map(|c| c.as_code_cache()),
     };
 
-    // custom_extensions.push(my_extension::init_ops_and_esm());
+    custom_extensions.push(my_extension::init_ops_and_esm());
 
     let options = WorkerOptions {
       bootstrap: BootstrapOptions {
@@ -616,7 +616,7 @@ impl CliMainWorkerFactory {
         serve_host: shared.options.serve_host.clone(),
         otel_config: shared.otel_config.clone(),
       },
-      extensions: vec![my_extension::init_ops_and_esm()],
+      extensions: custom_extensions,
       startup_snapshot: crate::js::deno_isolate_init(),
       create_params: create_isolate_create_params(),
       unsafely_ignore_certificate_errors: shared
