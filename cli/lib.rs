@@ -62,7 +62,7 @@ fn op_my_fn() -> Option<String> {
 deno_runtime::deno_core::extension!(
   my_extension,
   ops = [op_my_fn],
-  esm_entry_point = "ext:my_extension/mod.js",
+  esm_entry_point = "ext:my_extension/my_extension.js",
   esm = ["my_extension.js"],
 );
 
