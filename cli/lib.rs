@@ -104,7 +104,7 @@ pub async fn run_file(
 
 pub fn resolve_flags_and_init(
   args: Vec<std::ffi::OsString>,
-) -> Result<deno_lib_ext::Flags, AnyError> {
+) -> Result<Flags, AnyError> {
   let flags = match flags_from_vec(args) {
     Ok(flags) => flags,
     Err(err @ clap::Error { .. })
