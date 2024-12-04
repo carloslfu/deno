@@ -39,13 +39,10 @@ pub use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
 
 use deno_core::error::AnyError;
 use deno_core::error::JsError;
-use deno_core::futures::FutureExt;
-use deno_core::unsync::JoinHandle;
 pub use deno_npm::resolution::SnapshotFromLockfileError;
 pub use deno_runtime::fmt_errors::format_js_error;
 use deno_terminal::colors;
 use factory::CliFactory;
-use std::future::Future;
 use std::sync::Arc;
 use tools::run::check_permission_before_script;
 use tools::run::maybe_npm_install;
@@ -55,6 +52,19 @@ pub use deno_core::op2;
 pub use deno_npm;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
+
+#[deno_runtime::deno_core::op2]
+#[string]
+fn op_my_fn() -> Option<String> {
+  Some("hello".to_string())
+}
+
+deno_runtime::deno_core::extension!(
+    my_extension,
+    ops = [op_my_fn],
+    esm_entry_point = "ext:my_extension/mod.js",
+    esm = [dir "cli", "my_extension.js"],
+);
 
 pub async fn run_file(
   file_path: &str,
