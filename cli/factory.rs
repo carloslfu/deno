@@ -916,6 +916,7 @@ impl CliFactory {
 
   pub async fn create_cli_main_worker_factory(
     &self,
+    skip_op_registration: Option<bool>,
   ) -> Result<CliMainWorkerFactory, AnyError> {
     let cli_options = self.cli_options()?;
     let fs = self.fs();
@@ -977,13 +978,14 @@ impl CliFactory {
       self.root_permissions_container()?.clone(),
       StorageKeyResolver::from_options(cli_options),
       cli_options.sub_command().clone(),
-      self.create_cli_main_worker_options()?,
+      self.create_cli_main_worker_options(skip_op_registration)?,
       self.cli_options()?.otel_config(),
     ))
   }
 
   fn create_cli_main_worker_options(
     &self,
+    skip_op_registration: Option<bool>,
   ) -> Result<CliMainWorkerOptions, AnyError> {
     let cli_options = self.cli_options()?;
     let create_hmr_runner = if cli_options.has_hmr() {
@@ -1012,17 +1014,14 @@ impl CliFactory {
         None
       };
 
-    println!(
-      "--- skip_op_registration: {:?}",
-      cli_options.sub_command().is_run()
-    );
-
     Ok(CliMainWorkerOptions {
       argv: cli_options.argv().clone(),
       // This optimization is only available for "run" subcommand
       // because we need to register new ops for testing and jupyter
-      // integration.
-      skip_op_registration: cli_options.sub_command().is_run(),
+      // integration. Except if skip_op_registration parameter is provided.
+      skip_op_registration: cli_options.sub_command().is_run()
+        && skip_op_registration.is_none()
+        || skip_op_registration.unwrap_or(false),
       log_level: cli_options.log_level().unwrap_or(log::Level::Info).into(),
       enable_op_summary_metrics: cli_options.enable_op_summary_metrics(),
       enable_testing_features: cli_options.enable_testing_features(),

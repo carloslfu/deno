@@ -33,7 +33,6 @@ pub use crate::util::display;
 pub use crate::util::v8::get_v8_flags_from_env;
 pub use crate::util::v8::init_v8_flags;
 
-use deno_core::Extension;
 use deno_runtime::WorkerExecutionMode;
 pub use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
 
@@ -48,14 +47,13 @@ use tools::run::check_permission_before_script;
 use tools::run::maybe_npm_install;
 
 pub use deno_core;
-pub use deno_core::op2;
 pub use deno_npm;
 pub use deno_runtime;
 pub use deno_runtime::deno_node;
 
 pub async fn run_file(
   file_path: &str,
-  mut extensions: Vec<deno_runtime::deno_core::Extension>,
+  extensions: Vec<deno_core::Extension>,
 ) -> Result<i32, AnyError> {
   let args: Vec<_> = vec!["deno", "run", file_path]
     .into_iter()
@@ -79,15 +77,14 @@ pub async fn run_file(
 
   maybe_npm_install(&factory).await?;
 
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
-
-  let mut _extensions = std::mem::take(&mut extensions);
+  let worker_factory =
+    factory.create_cli_main_worker_factory(Some(false)).await?;
 
   let mut worker = worker_factory
     .create_main_worker(
       WorkerExecutionMode::Run,
       main_module.clone(),
-      _extensions,
+      extensions,
     )
     .await?;
 

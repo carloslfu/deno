@@ -74,16 +74,13 @@ pub async fn run_script(
 
   maybe_npm_install(&factory).await?;
 
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let worker_factory = factory.create_cli_main_worker_factory(None).await?;
   let mut worker = worker_factory
     .create_main_worker(mode, main_module.clone(), vec![])
     .await?;
 
-  println!("👀 worker");
-
   let exit_code = worker.run().await?;
 
-  println!("👀 exit_code: {:?}", exit_code);
   Ok(exit_code)
 }
 
@@ -95,7 +92,7 @@ pub async fn run_from_stdin(flags: Arc<Flags>) -> Result<i32, AnyError> {
   maybe_npm_install(&factory).await?;
 
   let file_fetcher = factory.file_fetcher()?;
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let worker_factory = factory.create_cli_main_worker_factory(None).await?;
   let mut source = Vec::new();
   std::io::stdin().read_to_end(&mut source)?;
   // Save a fake file into file fetcher cache
@@ -139,7 +136,7 @@ pub async fn eval_command(
     source: source_code.into_bytes().into(),
   });
 
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let worker_factory = factory.create_cli_main_worker_factory(None).await?;
   let mut worker = worker_factory
     .create_main_worker(WorkerExecutionMode::Eval, main_module.clone(), vec![])
     .await?;

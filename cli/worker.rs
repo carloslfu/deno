@@ -405,19 +405,6 @@ pub struct CliMainWorkerFactory {
   shared: Arc<SharedWorkerState>,
 }
 
-#[deno_core::op2]
-#[string]
-fn op_my_fn() -> Option<String> {
-  Some("hello".to_string())
-}
-
-deno_core::extension!(
-  my_extension,
-  ops = [op_my_fn],
-  esm_entry_point = "ext:my_extension/my_extension.js",
-  esm = ["my_extension.js"],
-);
-
 impl CliMainWorkerFactory {
   #[allow(clippy::too_many_arguments)]
   pub fn new(
@@ -469,16 +456,14 @@ impl CliMainWorkerFactory {
     &self,
     mode: WorkerExecutionMode,
     main_module: ModuleSpecifier,
-    mut extensions: Vec<Extension>,
+    extensions: Vec<Extension>,
   ) -> Result<CliMainWorker, AnyError> {
-    let mut _extensions = std::mem::take(&mut extensions);
-
     self
       .create_custom_worker(
         mode,
         main_module,
         self.shared.root_permissions.clone(),
-        _extensions,
+        extensions,
         Default::default(),
       )
       .await
@@ -585,8 +570,6 @@ impl CliMainWorkerFactory {
       permissions,
       v8_code_cache: shared.code_cache.clone().map(|c| c.as_code_cache()),
     };
-
-    custom_extensions.push(my_extension::init_ops_and_esm());
 
     let options = WorkerOptions {
       bootstrap: BootstrapOptions {
