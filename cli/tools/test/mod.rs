@@ -1595,7 +1595,7 @@ pub async fn run_tests(
   }
 
   let worker_factory =
-    Arc::new(factory.create_cli_main_worker_factory().await?);
+    Arc::new(factory.create_cli_main_worker_factory(None).await?);
 
   // Run tests
   test_specifiers(
@@ -1774,7 +1774,7 @@ pub async fn run_tests_with_watch(
         }
 
         let worker_factory =
-          Arc::new(factory.create_cli_main_worker_factory().await?);
+          Arc::new(factory.create_cli_main_worker_factory(None).await?);
 
         test_specifiers(
           worker_factory,

@@ -43,7 +43,7 @@ pub async fn serve(
 
   maybe_npm_install(&factory).await?;
 
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let worker_factory = factory.create_cli_main_worker_factory(None).await?;
   let hmr = serve_flags
     .watch
     .map(|watch_flags| watch_flags.hmr)
@@ -166,7 +166,8 @@ async fn serve_with_watch(
         maybe_npm_install(&factory).await?;
 
         let _ = watcher_communicator.watch_paths(cli_options.watch_paths());
-        let worker_factory = factory.create_cli_main_worker_factory().await?;
+        let worker_factory =
+          factory.create_cli_main_worker_factory(None).await?;
 
         do_serve(worker_factory, main_module.clone(), worker_count, hmr)
           .await?;

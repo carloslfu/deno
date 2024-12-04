@@ -166,7 +166,7 @@ pub async fn run(
   let npm_resolver = factory.npm_resolver().await?.clone();
   let resolver = factory.resolver().await?.clone();
   let file_fetcher = factory.file_fetcher()?;
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let worker_factory = factory.create_cli_main_worker_factory(None).await?;
   let history_file_path = factory
     .deno_dir()
     .ok()

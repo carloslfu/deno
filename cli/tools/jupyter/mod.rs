@@ -68,7 +68,7 @@ pub async fn kernel(
     PermissionsContainer::allow_all(factory.permission_desc_parser()?.clone());
   let npm_resolver = factory.npm_resolver().await?.clone();
   let resolver = factory.resolver().await?.clone();
-  let worker_factory = factory.create_cli_main_worker_factory().await?;
+  let worker_factory = factory.create_cli_main_worker_factory(None).await?;
   let (stdio_tx, stdio_rx) = mpsc::unbounded_channel();
 
   let conn_file =
