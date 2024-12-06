@@ -637,6 +637,8 @@ impl CliMainWorkerFactory {
         extension.name, extension.enabled
       );
 
+      println!("👀 extension memory address: {:p}", &extension);
+
       println!("👀 number of ops: {}", extension.ops.len());
 
       println!("👀 op address: {:p}", &extension.ops[0]);
