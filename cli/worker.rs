@@ -627,7 +627,11 @@ impl CliMainWorkerFactory {
       options.skip_op_registration
     );
 
-    // print extensions memory address
+    println!(
+      "👀 options has snapshot: {:?}",
+      options.startup_snapshot.is_some()
+    );
+
     println!("👀 extensions memory address: {:p}", &options.extensions);
 
     // iterate over extensions and print if they are enabled
@@ -637,7 +641,7 @@ impl CliMainWorkerFactory {
         extension.name, extension.enabled
       );
 
-      println!("👀 extension memory address: {:p}", &extension);
+      println!("👀 extension memory address: {:p}", extension);
 
       println!("👀 number of ops: {}", extension.ops.len());
 
