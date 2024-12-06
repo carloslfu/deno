@@ -627,6 +627,19 @@ impl CliMainWorkerFactory {
       options.skip_op_registration
     );
 
+    // print extensions memory address
+    println!("👀 extensions memory address: {:p}", &options.extensions);
+
+    // iterate over extensions and print if they are enabled
+    for extension in &options.extensions {
+      println!(
+        "👀 extension.enabled, name: {:?}, enabled: {:?}",
+        extension.name, extension.enabled
+      );
+
+      extension.ops[0].disable();
+    }
+
     let mut worker = MainWorker::bootstrap_from_options(
       main_module.clone(),
       services,
