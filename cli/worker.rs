@@ -637,7 +637,9 @@ impl CliMainWorkerFactory {
         extension.name, extension.enabled
       );
 
-      extension.ops[0].disable();
+      println!("👀 number of ops: {}", extension.ops.len());
+
+      println!("👀 op address: {:p}", &extension.ops[0]);
     }
 
     let mut worker = MainWorker::bootstrap_from_options(
