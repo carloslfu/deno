@@ -2,7 +2,7 @@
 
 [package]
 name = "deno_lib_ext"
-version = "0.6.0"
+version = "0.6.2"
 authors.workspace = true
 # default-run = "deno"
 edition.workspace = true
@@ -53,12 +53,13 @@ dhat-heap = ["dhat"]
 upgrade = []
 # A dev feature to disable creations and loading of snapshots in favor of
 # loading JS sources at runtime.
-hmr = ["deno_runtime/hmr"]
+hmr = ["deno_runtime_ext/hmr"]
 # Vendor zlib as zlib-ng
 __vendored_zlib_ng = ["flate2/zlib-ng-compat", "libz-sys/zlib-ng"]
 
 [build-dependencies]
-deno_runtime = { workspace = true, features = ["include_js_files_for_snapshotting", "only_snapshotted_js_sources"] }
+# deno_runtime = { workspace = true, features = ["include_js_files_for_snapshotting", "only_snapshotted_js_sources"] }
+deno_runtime_ext = { version = "0.1.0", features = ["include_js_files_for_snapshotting", "only_snapshotted_js_sources"] }
 deno_core = { workspace = true, features = ["include_js_files_for_snapshotting"] }
 lazy-regex.workspace = true
 serde.workspace = true
@@ -84,7 +85,8 @@ deno_npm.workspace = true
 deno_package_json.workspace = true
 deno_path_util.workspace = true
 deno_resolver.workspace = true
-deno_runtime = { workspace = true, features = ["include_js_files_for_snapshotting"] }
+# deno_runtime = { workspace = true, features = ["include_js_files_for_snapshotting"] }
+deno_runtime_ext = { version = "0.1.0", features = ["include_js_files_for_snapshotting"] }
 deno_semver.workspace = true
 deno_task_shell = "=0.18.1"
 deno_telemetry.workspace = true

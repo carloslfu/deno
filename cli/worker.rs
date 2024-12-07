@@ -602,8 +602,7 @@ impl CliMainWorkerFactory {
         otel_config: shared.otel_config.clone(),
       },
       extensions: custom_extensions,
-      // startup_snapshot: crate::js::deno_isolate_init(),
-      startup_snapshot: None,
+      startup_snapshot: crate::js::deno_isolate_init(),
       create_params: create_isolate_create_params(),
       unsafely_ignore_certificate_errors: shared
         .options
