@@ -42,13 +42,12 @@ const {
   PromisePrototypeThen,
   PromiseResolve,
   StringPrototypePadEnd,
+  StringPrototypeStartsWith,
   Symbol,
   SymbolIterator,
   TypeError,
 } = primordials;
-const {
-  isNativeError,
-} = core;
+const { isNativeError } = core;
 import { registerDeclarativeServer } from "ext:deno_http/00_serve.ts";
 import * as event from "ext:deno_web/02_event.js";
 import * as location from "ext:deno_web/12_location.js";
@@ -82,9 +81,7 @@ import {
   mainRuntimeGlobalProperties,
   memoizeLazy,
 } from "ext:runtime/98_global_scope_window.js";
-import {
-  workerRuntimeGlobalProperties,
-} from "ext:runtime/98_global_scope_worker.js";
+import { workerRuntimeGlobalProperties } from "ext:runtime/98_global_scope_worker.js";
 import { SymbolDispose, SymbolMetadata } from "ext:deno_web/00_infra.js";
 import { bootstrap as bootstrapOtel } from "ext:deno_telemetry/telemetry.ts";
 
@@ -117,13 +114,16 @@ function windowClose() {
     windowIsClosing = true;
     // Push a macrotask to exit after a promise resolve.
     // This is not perfect, but should be fine for first pass.
-    PromisePrototypeThen(
-      PromiseResolve(),
-      () =>
-        FunctionPrototypeCall(timers.setTimeout, null, () => {
+    PromisePrototypeThen(PromiseResolve(), () =>
+      FunctionPrototypeCall(
+        timers.setTimeout,
+        null,
+        () => {
           // This should be fine, since only Window/MainWorker has .close()
           os.exit(0);
-        }, 0),
+        },
+        0
+      )
     );
   }
 }
@@ -151,14 +151,14 @@ function postMessage(message, transferOrOptions = { __proto__: null }) {
     const transfer = webidl.converters["sequence<object>"](
       transferOrOptions,
       prefix,
-      "Argument 2",
+      "Argument 2"
     );
     options = { transfer };
   } else {
     options = webidl.converters.StructuredSerializeOptions(
       transferOrOptions,
       prefix,
-      "Argument 2",
+      "Argument 2"
     );
   }
   const { transfer } = options;
@@ -173,15 +173,17 @@ function hasMessageEventListener() {
   // the function name is kind of a misnomer, but we want to behave
   // as if we have message event listeners if a node message port is explicitly
   // refed (and the inverse as well)
-  return event.listenerCount(globalThis, "message") > 0 ||
-    messagePort.refedMessagePortsCount > 0;
+  return (
+    event.listenerCount(globalThis, "message") > 0 ||
+    messagePort.refedMessagePortsCount > 0
+  );
 }
 
 async function pollForMessages() {
   if (!globalDispatchEvent) {
     globalDispatchEvent = FunctionPrototypeBind(
       globalThis.dispatchEvent,
-      globalThis,
+      globalThis
     );
   }
   while (!isClosing) {
@@ -199,10 +201,8 @@ async function pollForMessages() {
     const msgEvent = new event.MessageEvent("message", {
       cancelable: false,
       data: message,
-      ports: ArrayPrototypeFilter(
-        transferables,
-        (t) =>
-          ObjectPrototypeIsPrototypeOf(messagePort.MessagePortPrototype, t),
+      ports: ArrayPrototypeFilter(transferables, (t) =>
+        ObjectPrototypeIsPrototypeOf(messagePort.MessagePortPrototype, t)
       ),
     });
     event.setIsTrusted(msgEvent, true);
@@ -242,7 +242,7 @@ function importScripts(...urls) {
     } catch {
       throw new DOMException(
         `Failed to parse URL: ${scriptUrl}`,
-        "SyntaxError",
+        "SyntaxError"
       );
     }
   });
@@ -251,10 +251,7 @@ function importScripts(...urls) {
   // imported scripts, so we use `loadedMainWorkerScript` to distinguish them.
   // TODO(andreubotella) Refactor worker creation so the main script isn't
   // loaded with `importScripts()`.
-  const scripts = op_worker_sync_fetch(
-    parsedUrls,
-    !loadedMainWorkerScript,
-  );
+  const scripts = op_worker_sync_fetch(parsedUrls, !loadedMainWorkerScript);
   loadedMainWorkerScript = true;
 
   for (let i = 0; i < scripts.length; ++i) {
@@ -270,7 +267,7 @@ const opArgs = memoizeLazy(() => op_bootstrap_args());
 const opPid = memoizeLazy(() => op_bootstrap_pid());
 setNoColorFns(
   () => op_bootstrap_no_color() || !op_bootstrap_is_stdout_tty(),
-  () => op_bootstrap_no_color() || !op_bootstrap_is_stderr_tty(),
+  () => op_bootstrap_no_color() || !op_bootstrap_is_stderr_tty()
 );
 
 function formatException(error) {
@@ -280,11 +277,12 @@ function formatException(error) {
   ) {
     return null;
   } else if (typeof error == "string") {
-    return `Uncaught ${
-      inspectArgs([quoteString(error, getDefaultInspectOptions())], {
+    return `Uncaught ${inspectArgs(
+      [quoteString(error, getDefaultInspectOptions())],
+      {
         colors: !getStderrNoColor(),
-      })
-    }`;
+      }
+    )}`;
   } else {
     return `Uncaught ${inspectArgs([error], { colors: !getStderrNoColor() })}`;
   }
@@ -316,59 +314,50 @@ core.registerErrorBuilder(
   "DOMExceptionOperationError",
   function DOMExceptionOperationError(msg) {
     return new DOMException(msg, "OperationError");
-  },
+  }
 );
 core.registerErrorBuilder(
   "DOMExceptionQuotaExceededError",
   function DOMExceptionQuotaExceededError(msg) {
     return new DOMException(msg, "QuotaExceededError");
-  },
+  }
 );
 core.registerErrorBuilder(
   "DOMExceptionNotSupportedError",
   function DOMExceptionNotSupportedError(msg) {
     return new DOMException(msg, "NotSupported");
-  },
+  }
 );
 core.registerErrorBuilder(
   "DOMExceptionNetworkError",
   function DOMExceptionNetworkError(msg) {
     return new DOMException(msg, "NetworkError");
-  },
+  }
 );
 core.registerErrorBuilder(
   "DOMExceptionAbortError",
   function DOMExceptionAbortError(msg) {
     return new DOMException(msg, "AbortError");
-  },
+  }
 );
 core.registerErrorBuilder(
   "DOMExceptionInvalidCharacterError",
   function DOMExceptionInvalidCharacterError(msg) {
     return new DOMException(msg, "InvalidCharacterError");
-  },
+  }
 );
 core.registerErrorBuilder(
   "DOMExceptionDataError",
   function DOMExceptionDataError(msg) {
     return new DOMException(msg, "DataError");
-  },
+  }
 );
 
-function runtimeStart(
-  denoVersion,
-  v8Version,
-  tsVersion,
-  target,
-) {
+function runtimeStart(denoVersion, v8Version, tsVersion, target) {
   core.setWasmStreamingCallback(fetch.handleWasmStreaming);
   core.setReportExceptionCallback(event.reportException);
   op_set_format_exception_callback(formatException);
-  version.setVersions(
-    denoVersion,
-    v8Version,
-    tsVersion,
-  );
+  version.setVersions(denoVersion, v8Version, tsVersion);
   core.setBuildInfo(target);
 }
 
@@ -378,14 +367,11 @@ core.setHandledPromiseRejectionHandler(processRejectionHandled);
 // Notification that the core received an unhandled promise rejection that is about to
 // terminate the runtime. If we can handle it, attempt to do so.
 function processUnhandledPromiseRejection(promise, reason) {
-  const rejectionEvent = new event.PromiseRejectionEvent(
-    "unhandledrejection",
-    {
-      cancelable: true,
-      promise,
-      reason,
-    },
-  );
+  const rejectionEvent = new event.PromiseRejectionEvent("unhandledrejection", {
+    cancelable: true,
+    promise,
+    reason,
+  });
 
   // Note that the handler may throw, causing a recursive "error" event
   globalThis_.dispatchEvent(rejectionEvent);
@@ -411,7 +397,7 @@ function processUnhandledPromiseRejection(promise, reason) {
 function processRejectionHandled(promise, reason) {
   const rejectionHandledEvent = new event.PromiseRejectionEvent(
     "rejectionhandled",
-    { promise, reason },
+    { promise, reason }
   );
 
   // Note that the handler may throw, causing a recursive "error" event
@@ -428,7 +414,7 @@ function dispatchLoadEvent() {
 
 function dispatchBeforeUnloadEvent() {
   return globalThis_.dispatchEvent(
-    new Event("beforeunload", { cancelable: true }),
+    new Event("beforeunload", { cancelable: true })
   );
 }
 
@@ -444,10 +430,8 @@ ObjectDefineProperties(globalThis, windowOrWorkerGlobalScope);
 // by unstable features if those are enabled.
 function exposeUnstableFeaturesForWindowOrWorkerGlobalScope(unstableFeatures) {
   const featureIds = ArrayPrototypeMap(
-    ObjectKeys(
-      unstableForWindowOrWorkerGlobalScope,
-    ),
-    (k) => k | 0,
+    ObjectKeys(unstableForWindowOrWorkerGlobalScope),
+    (k) => k | 0
   );
 
   for (let i = 0; i <= featureIds.length; i++) {
@@ -495,11 +479,21 @@ const NOT_IMPORTED_OPS = [
   "op_napi_open",
 ];
 
+/**
+ * Prefix for custom ops. For extensions to register their own ops and not get
+ * deleted at runtime cleanup. The embedder needs to handle the cleanup of
+ * custom ops.
+ */
+const CUSTOM_OP_PREFIX = "custom_op_";
+
 function removeImportedOps() {
   const allOpNames = ObjectKeys(ops);
   for (let i = 0; i < allOpNames.length; i++) {
     const opName = allOpNames[i];
-    if (!ArrayPrototypeIncludes(NOT_IMPORTED_OPS, opName)) {
+    if (
+      !ArrayPrototypeIncludes(NOT_IMPORTED_OPS, opName) &&
+      !StringPrototypeStartsWith(opName, CUSTOM_OP_PREFIX)
+    ) {
       delete ops[opName];
     }
   }
@@ -540,11 +534,7 @@ ObjectDefineProperties(finalDenoNs, {
   },
 });
 
-const {
-  tsVersion,
-  v8Version,
-  target,
-} = op_snapshot_options();
+const { tsVersion, v8Version, target } = op_snapshot_options();
 
 const executionModes = {
   none: 0,
@@ -620,7 +610,7 @@ function bootstrapMainRuntime(runtimeOptions, warmup = false) {
               "color: yellow;",
               "color: inherit;",
               "font-weight: bold;",
-              "font-weight: normal;",
+              "font-weight: normal;"
             );
           }
           return;
@@ -634,7 +624,7 @@ function bootstrapMainRuntime(runtimeOptions, warmup = false) {
               "color: yellow;",
               "color: inherit;",
               "font-weight: bold;",
-              "font-weight: normal;",
+              "font-weight: normal;"
             );
           }
           if (mode === executionModes.serve) {
@@ -689,12 +679,7 @@ function bootstrapMainRuntime(runtimeOptions, warmup = false) {
     event.defineEventHandler(globalThis, "beforeunload");
     event.defineEventHandler(globalThis, "unload");
 
-    runtimeStart(
-      denoVersion,
-      v8Version,
-      tsVersion,
-      target,
-    );
+    runtimeStart(denoVersion, v8Version, tsVersion, target);
 
     // TODO(bartlomieju): this is not ideal, but because we use `ObjectAssign`
     // above any properties that are defined elsewhere using `Object.defineProperty`
@@ -707,7 +692,7 @@ function bootstrapMainRuntime(runtimeOptions, warmup = false) {
           return jupyterNs;
         }
         throw new Error(
-          "Deno.jupyter is only available in `deno jupyter` subcommand",
+          "Deno.jupyter is only available in `deno jupyter` subcommand"
         );
       },
       set(val) {
@@ -768,31 +753,36 @@ function bootstrapMainRuntime(runtimeOptions, warmup = false) {
       delete globalThis.Temporal.TimeZone;
 
       // Modify `Temporal.Calendar` to calendarId string
-      ArrayPrototypeForEach([
-        globalThis.Temporal.PlainDate,
-        globalThis.Temporal.PlainDateTime,
-        globalThis.Temporal.PlainMonthDay,
-        globalThis.Temporal.PlainYearMonth,
-        globalThis.Temporal.ZonedDateTime,
-      ], (target) => {
-        const getCalendar =
-          ObjectGetOwnPropertyDescriptor(target.prototype, "calendar").get;
-        ObjectDefineProperty(target.prototype, "calendarId", {
-          __proto__: null,
-          get: function calendarId() {
-            return FunctionPrototypeCall(getCalendar, this).id;
-          },
-          enumerable: false,
-          configurable: true,
-        });
-        delete target.prototype.calendar;
-      });
+      ArrayPrototypeForEach(
+        [
+          globalThis.Temporal.PlainDate,
+          globalThis.Temporal.PlainDateTime,
+          globalThis.Temporal.PlainMonthDay,
+          globalThis.Temporal.PlainYearMonth,
+          globalThis.Temporal.ZonedDateTime,
+        ],
+        (target) => {
+          const getCalendar = ObjectGetOwnPropertyDescriptor(
+            target.prototype,
+            "calendar"
+          ).get;
+          ObjectDefineProperty(target.prototype, "calendarId", {
+            __proto__: null,
+            get: function calendarId() {
+              return FunctionPrototypeCall(getCalendar, this).id;
+            },
+            enumerable: false,
+            configurable: true,
+          });
+          delete target.prototype.calendar;
+        }
+      );
 
       // Modify `Temporal.TimeZone` to timeZoneId string
       {
         const getTimeZone = ObjectGetOwnPropertyDescriptor(
           globalThis.Temporal.ZonedDateTime.prototype,
-          "timeZone",
+          "timeZone"
         ).get;
         ObjectDefineProperty(
           globalThis.Temporal.ZonedDateTime.prototype,
@@ -804,7 +794,7 @@ function bootstrapMainRuntime(runtimeOptions, warmup = false) {
             },
             enumerable: false,
             configurable: true,
-          },
+          }
         );
         delete globalThis.Temporal.ZonedDateTime.prototype.timeZone;
       }
@@ -846,7 +836,7 @@ function bootstrapWorkerRuntime(
   internalName,
   workerId,
   maybeWorkerMetadata,
-  warmup = false,
+  warmup = false
 ) {
   if (!warmup) {
     if (hasBootstrapped) {
@@ -884,7 +874,7 @@ function bootstrapWorkerRuntime(
       ObjectDefineProperty(
         globalThis,
         "importScripts",
-        core.propWritable(importScripts),
+        core.propWritable(importScripts)
       );
     }
     ObjectSetPrototypeOf(globalThis, DedicatedWorkerGlobalScope.prototype);
@@ -907,7 +897,7 @@ function bootstrapWorkerRuntime(
       v8Version,
       tsVersion,
       target,
-      internalName ?? name,
+      internalName ?? name
     );
 
     location.setLocationHref(location_);
@@ -971,31 +961,36 @@ function bootstrapWorkerRuntime(
       delete globalThis.Temporal.TimeZone;
 
       // Modify `Temporal.Calendar` to calendarId string
-      ArrayPrototypeForEach([
-        globalThis.Temporal.PlainDate,
-        globalThis.Temporal.PlainDateTime,
-        globalThis.Temporal.PlainMonthDay,
-        globalThis.Temporal.PlainYearMonth,
-        globalThis.Temporal.ZonedDateTime,
-      ], (target) => {
-        const getCalendar =
-          ObjectGetOwnPropertyDescriptor(target.prototype, "calendar").get;
-        ObjectDefineProperty(target.prototype, "calendarId", {
-          __proto__: null,
-          get: function calendarId() {
-            return FunctionPrototypeCall(getCalendar, this).id;
-          },
-          enumerable: false,
-          configurable: true,
-        });
-        delete target.prototype.calendar;
-      });
+      ArrayPrototypeForEach(
+        [
+          globalThis.Temporal.PlainDate,
+          globalThis.Temporal.PlainDateTime,
+          globalThis.Temporal.PlainMonthDay,
+          globalThis.Temporal.PlainYearMonth,
+          globalThis.Temporal.ZonedDateTime,
+        ],
+        (target) => {
+          const getCalendar = ObjectGetOwnPropertyDescriptor(
+            target.prototype,
+            "calendar"
+          ).get;
+          ObjectDefineProperty(target.prototype, "calendarId", {
+            __proto__: null,
+            get: function calendarId() {
+              return FunctionPrototypeCall(getCalendar, this).id;
+            },
+            enumerable: false,
+            configurable: true,
+          });
+          delete target.prototype.calendar;
+        }
+      );
 
       // Modify `Temporal.TimeZone` to timeZoneId string
       {
         const getTimeZone = ObjectGetOwnPropertyDescriptor(
           globalThis.Temporal.ZonedDateTime.prototype,
-          "timeZone",
+          "timeZone"
         ).get;
         ObjectDefineProperty(
           globalThis.Temporal.ZonedDateTime.prototype,
@@ -1007,7 +1002,7 @@ function bootstrapWorkerRuntime(
             },
             enumerable: false,
             configurable: true,
-          },
+          }
         );
         delete globalThis.Temporal.ZonedDateTime.prototype.timeZone;
       }
@@ -1072,7 +1067,7 @@ event.saveGlobalThisReference(globalThis);
 event.defineEventHandler(globalThis, "unhandledrejection");
 
 // Nothing listens to this, but it warms up the code paths for event dispatch
-(new event.EventTarget()).dispatchEvent(new Event("warmup"));
+new event.EventTarget().dispatchEvent(new Event("warmup"));
 
 removeImportedOps();
 
@@ -1084,6 +1079,6 @@ bootstrapWorkerRuntime(
   undefined,
   undefined,
   undefined,
-  true,
+  true
 );
 nodeBootstrap({ warmup: true });
