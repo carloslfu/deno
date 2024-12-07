@@ -580,7 +580,9 @@ impl CliMainWorkerFactory {
           .unwrap_or(1),
         log_level: shared.options.log_level,
         enable_op_summary_metrics: shared.options.enable_op_summary_metrics,
+        // enable_op_summary_metrics: false,
         enable_testing_features: shared.options.enable_testing_features,
+        // enable_testing_features: false,
         locale: deno_core::v8::icu::get_language_tag(),
         location: shared.options.location.clone(),
         no_color: !colors::use_color(),
@@ -600,7 +602,8 @@ impl CliMainWorkerFactory {
         otel_config: shared.otel_config.clone(),
       },
       extensions: custom_extensions,
-      startup_snapshot: crate::js::deno_isolate_init(),
+      // startup_snapshot: crate::js::deno_isolate_init(),
+      startup_snapshot: None,
       create_params: create_isolate_create_params(),
       unsafely_ignore_certificate_errors: shared
         .options
@@ -613,6 +616,7 @@ impl CliMainWorkerFactory {
       should_break_on_first_statement: shared.options.inspect_brk,
       should_wait_for_inspector_session: shared.options.inspect_wait,
       strace_ops: shared.options.strace_ops.clone(),
+      // strace_ops: None,
       get_error_class_fn: Some(&errors::get_error_class_name),
       cache_storage_dir,
       origin_storage_dir,
@@ -620,33 +624,8 @@ impl CliMainWorkerFactory {
       skip_op_registration: shared.options.skip_op_registration,
       enable_stack_trace_arg_in_ops: crate::args::has_trace_permissions_enabled(
       ),
+      // enable_stack_trace_arg_in_ops: false,
     };
-
-    println!(
-      "👀 FINAL options.skip_op_registration: {:?}",
-      options.skip_op_registration
-    );
-
-    println!(
-      "👀 options has snapshot: {:?}",
-      options.startup_snapshot.is_some()
-    );
-
-    println!("👀 extensions memory address: {:p}", &options.extensions);
-
-    // iterate over extensions and print if they are enabled
-    for extension in &options.extensions {
-      println!(
-        "👀 extension.enabled, name: {:?}, enabled: {:?}",
-        extension.name, extension.enabled
-      );
-
-      println!("👀 extension memory address: {:p}", extension);
-
-      println!("👀 number of ops: {}", extension.ops.len());
-
-      println!("👀 op address: {:p}", &extension.ops[0]);
-    }
 
     let mut worker = MainWorker::bootstrap_from_options(
       main_module.clone(),

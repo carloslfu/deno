@@ -88,11 +88,8 @@ pub async fn run_file(
     )
     .await?;
 
-  println!("👀 worker");
-
   let exit_code = worker.run().await?;
 
-  println!("👀 exit_code: {:?}", exit_code);
   Ok(exit_code)
 }
 
