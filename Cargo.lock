@@ -1944,7 +1944,7 @@ dependencies = [
 
 [[package]]
 name = "deno_lib_ext"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "anstream",
  "async-trait",

@@ -101,18 +101,11 @@ pub fn resolve_flags_and_init(
     Err(err @ clap::Error { .. })
       if err.kind() == clap::error::ErrorKind::DisplayVersion =>
     {
-      // Ignore results to avoid BrokenPipe errors.
-      util::logger::init(None);
       let _ = err.print();
       std::process::exit(0);
     }
-    Err(err) => {
-      util::logger::init(None);
-      exit_for_error(AnyError::from(err))
-    }
+    Err(err) => exit_for_error(AnyError::from(err)),
   };
-
-  util::logger::init(flags.log_level);
 
   // TODO(bartlomieju): remove in Deno v2.5 and hard error then.
   if flags.unstable_config.legacy_flag_enabled {
@@ -178,7 +171,7 @@ pub fn set_npm_user_agent() {
 }
 
 pub(crate) fn unstable_exit_cb(feature: &str, api_name: &str) {
-  log::error!(
+  println!(
     "Unstable API '{api_name}'. The `--unstable-{}` flag must be provided.",
     feature
   );
